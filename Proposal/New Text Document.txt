@@ -1,0 +1,29 @@
+tkinter
+database update
+
+
+block and stream cipher 4 page
+draw.io
+
+
+Sending emails: You can use socket programming to create an SMTP (Simple Mail Transfer Protocol)
+socket and connect to an SMTP server to send emails. This can be useful if you want to create an
+email application that allows users to send emails from their own accounts.
+
+//Dashboard
+inside frame pixel 1185 * 576
+icon text 41 pt
+inside button 34 px
+
+event manage
+
+normal button pixel 130 x 34
+
+// GIMP
+text button zoom : 2300
+first letter x-38    y-5.2
+Capital I length 5.2 to  20.4
+
+sans-serif font  size 22 px white fg
+
+icon inside photoshop 16x16
