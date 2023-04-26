@@ -223,41 +223,36 @@ class Home:
             messagebox.showerror("Empty field","Enter your message")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'check_receipent',
                     'receipentid': self.toemail_entry.get() ,
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "receipent_exists":
                     receivername = response['receivername']
-                    print(receivername)
-                    self.socket_connection.connect()
-                    request = {
-                        'type': 'client_message',
-                        'sendername': self.currentusr_name,
-                        'senderid': self.currentusr_email,
-                        'receivername': receivername,
-                        'receiverid': self.toemail_entry.get(),
-                        'subject': self.subject_entry.get(),
-                        'body': self.message_entry.get("1.0", "end-1c")
-                    }
-                    request_json = json.dumps(request)
-                    self.socket_connection.send(request_json)
-                    response_json = self.socket_connection.receive()
-                    response = json.loads(response_json)
-                    if response['type'] =="message_sent":
-                        self.toemail_entry.delete(0, END)
-                        self.subject_entry.delete(0, END)
-                        self.message_entry.delete("1.0", END)
-                        messagebox.showinfo("Message sent","Message sent successfully")
-                    elif response['type'] == "message_sent_failed":
-                        messagebox.showerror("Failed","Failed to send a message")
+                    try:
+                        request = {
+                            'type': 'client_message',
+                            'sendername': self.currentusr_name,
+                            'senderid': self.currentusr_email,
+                            'receivername': receivername,
+                            'receiverid': self.toemail_entry.get(),
+                            'subject': self.subject_entry.get(),
+                            'body': self.message_entry.get("1.0", "end-1c")
+                        }
+                        self.socket_connection.send(request)
+                        response = self.socket_connection.receive()
+                        if response['type'] =="message_sent":
+                            self.toemail_entry.delete(0, END)
+                            self.subject_entry.delete(0, END)
+                            self.message_entry.delete("1.0", END)
+                            messagebox.showinfo("Message sent","Message sent successfully")
+                        elif response['type'] == "message_sent_failed":
+                            messagebox.showerror("Failed","Failed to send a message")
+                    except:
+                        messagebox.showerror("Error","Issue")
+
                 elif response['type'] == "no_receipent":
                     messagebox.showerror("Invalid receipent","Receipent address doesnot exists")
                 elif response['type'] == "error":
@@ -435,17 +430,12 @@ class Home:
         self.deleteacc_button.place(x=87, y=595)
 
         try:
-            self.socket_connection.connect()
             request = {
                 'type': 'view_profile',
                 'email': self.currentusr_email
             }
-            request_json = json.dumps(request)
-            self.socket_connection.send(request_json)
-            response_json = self.socket_connection.receive()
-            response = json.loads(response_json)
-            # self.socket_connection.send(request)
-            # response = self.socket_connection.receive()
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
             if response['type'] == "error":
                 messagebox.showerror("Server issue","Server disconnected")
             elif response['type'] == "my_profile":
@@ -509,18 +499,13 @@ class Home:
             messagebox.showerror("Empty field","Enter password")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'delete_account',
                     'email': self.currentusr_email,
                     'password': self.currentpwd_entry.get()
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "wrong_password":
                     messagebox.showerror("Wrong password","Password doesn't match with our system")
                 elif response['type'] == "delete_account_success":
@@ -589,19 +574,14 @@ class Home:
             messagebox.showerror("Mismatch","Password Mismatch")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'update_password',
                     'email': self.currentusr_email ,
                     'password': self.currentpassword_entry.get(),
                     'newpassword': self.newpassword_entry.get()
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "wrong_password":
                     messagebox.showerror("Wrong password","Current password doesn't  match with our system")
                 elif response['type'] == "update_password_success":
