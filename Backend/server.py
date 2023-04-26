@@ -269,7 +269,10 @@ def main():
 
         except ConnectionResetError as e:
             print(e)
+        except KeyboardInterrupt:
+            print("Caught keyboard interruption, exiting...")
             c.close()
+
         
 if __name__ == '__main__':
     main()
