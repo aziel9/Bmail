@@ -30,7 +30,11 @@ def handle_client(c, addr):
                 msg_length_bytes = c.recv(4)
                 if msg_length_bytes:
                     msg_length = int.from_bytes(msg_length_bytes, byteorder='big')
+<<<<<<< HEAD
                     # print(msg_length)
+=======
+                    print(msg_length)
+>>>>>>> 0f11a791f8da6bfca4c5a7b895cf78ad479a5e12
                     data = b''
                     while len(data) < msg_length:
                         chunk = c.recv(min(msg_length - len(data), 1024))
@@ -194,6 +198,7 @@ def handle_client(c, addr):
                     finally:
                         send(c, response)
 
+<<<<<<< HEAD
                 elif request['type'] == "request_inbox_message":
                     try:
                         query = "SELECT *FROM messages where receiverid= %s ORDER BY time DESC"
@@ -328,3 +333,113 @@ def start():
 
 print("[STARTING] Server is starting...")
 start()
+=======
+                # elif request['type'] == "request_inbox_message":
+                #     receiver = data[1]
+                #     try:
+                #         query = "SELECT *FROM messages where senderid= %s ORDER BY time DESC"
+                #         result = dbs_connection.search(query, (receiver,))
+                #         print(result)
+                #         if not result:
+                #             response = "empty_inbox"
+                #         else:
+                #             response = result
+                #     except BaseException as msg:
+                #             response= "error"
+                #             print(msg)
+                #     finally:
+                #         c.send(json.dumps(response).encode())
+
+                elif request['type'] == "view_profile":
+                    try:
+                        query = "SELECT fullname, email, phone, bday,gender, ageaccount FROM user_data WHERE email = %s"
+                        result = dbs_connection.search(query, (request['email'],))
+                        pname, pemail,pmob, pbday, pgen, pacc  = result[0]
+                        response= {
+                            'type': 'my_profile',
+                            'name': pname,
+                            'email': pemail,
+                            'mobile': pmob,
+                            'bday': pbday,
+                            'gender': pgen,
+                            'accountdate': pacc
+                        }
+
+                    except BaseException as msg:
+                        response = {
+                            'type': 'error'
+                        }
+                        print(msg)
+                    finally:
+                        send(c, response)
+
+                elif request['type'] == "delete_account":
+                    hashed_password = hashlib.sha256(request['password'].encode()).hexdigest()
+                    try:
+                        query = "SELECT email, password FROM user_data WHERE email = %s AND password = %s"
+                        result = dbs_connection.search(query, (request['email'],hashed_password))
+                        if len(result) >0:
+                            query = "UPDATE user_data SET fullname= NULL, phone= NULL, gender= NULL, bday=NULL, ageaccount= NULL, status='Inactive', password= NULL WHERE email= %s"
+                            dbs_connection.update(query, (request['email'],))
+                            response = {
+                                'type': 'delete_account_success'
+                            }
+                        else:
+                            response = {
+                                'type': 'wrong_password'
+                            }
+                    except BaseException as msg:
+                        response = {
+                            'type':  'error'
+                        }
+                        print(msg)
+                    finally:
+                        send(c, response)
+
+                elif request['type'] == "update_password":
+                    hashedcurr_password = hashlib.sha256(request['password'].encode()).hexdigest()
+                    hashednew_password = hashlib.sha256(request['newpassword'].encode()).hexdigest()
+                    try:
+                        query = "SELECT password FROM user_data WHERE email = %s"
+                        result = dbs_connection.search(query, (request['email'],))
+                        stopwd = result[0]
+                        if stopwd[0] != hashedcurr_password:
+                            response = {
+                                'type': 'wrong_password'
+                            }
+                        else:
+                            query = "UPDATE user_data SET password=%s WHERE email=%s"
+                            values = (hashednew_password, request['email'])
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'update_password_success'
+                            }
+                    except BaseException as error:
+                        print("Error: ", error)
+                        response = {
+                            'type': 'error'
+                        }
+                    finally:
+                        send(c, response)
+
+    except ConnectionResetError:
+        print(f"[DISCONNECTION] {addr} disconnected.")
+
+
+    c.close()
+
+
+def start():
+    server_socket.listen(5)
+    print(f"[LISTENING] Server is listening on {SERVER}")
+    while True:
+        c, addr = server_socket.accept()
+        thread = threading.Thread(target=handle_client, args=(c, addr))
+        thread.dbs_connection = dbs_connection
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+
+
+print("[STARTING] Server is starting...")
+start()
+>>>>>>> 0f11a791f8da6bfca4c5a7b895cf78ad479a5e12

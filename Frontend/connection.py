@@ -30,7 +30,12 @@ class SocketConnection:
                 response_json += chunk
             response = json.loads(response_json.decode())
             return response
+<<<<<<< HEAD
         
+=======
+
+    
+>>>>>>> 0f11a791f8da6bfca4c5a7b895cf78ad479a5e12
     def close(self):
         self.socket.close()
 
