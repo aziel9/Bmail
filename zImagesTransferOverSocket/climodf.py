@@ -23,6 +23,8 @@ def upload_image():
     metadata = f"{filename}|{file_extension}".encode()
     data = b"".join([metadata, b":", image_bytes])
     client_socket.sendall(data)
+    # client_socket.sendaall(data)
+
     client_socket.close()
 upload_button = tk.Button(root, text="Upload Image", command=upload_image)
 upload_button.pack()

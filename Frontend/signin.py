@@ -1,11 +1,9 @@
-
 from tkinter import *
 from PIL import ImageTk
 from tkinter import messagebox
 from tkinter.ttk import Combobox
-import json
 import re
-from connection import SocketConnection
+import connection
 import main
 
 #Creates a class where the login form is displayed
@@ -44,9 +42,6 @@ class Signin:
         self.password_label.place(x=753, y=442)
         self.password_entry = Entry(self.window, highlightthickness=0, relief=FLAT, bg="#EDEDED", fg="#000000",font=("Inter", 11, "bold"), show="*")
         self.password_entry.place(x=756, y=473, width=350, height=50)
-        
-        # self.forgotpass_label = Label(self.window, text="Forgot password?", bg="white", fg="#000000", font=("Inter", 10, "bold"))
-        # self.forgotpass_label.place(x=985, y=547)  
 
         self.forgot_label = Label(self.window, text="forgot ", bg="white", fg="#000000",
                                   font=("Inter", 11, "bold"))
@@ -91,18 +86,13 @@ class Signin:
 
     def signin(self):
         try:
-            self.socket_connection.connect()
             request = {
                 'type': 'login',
                 'email': self.email_entry.get() ,
                 'password': self.password_entry.get()
             }
-            request_json = json.dumps(request)
-            self.socket_connection.send(request_json)
-            response_json = self.socket_connection.receive()
-            response = json.loads(response_json)
-            # self.socket_connection.send(request)
-            # response = self.socket_connection.receive()
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
             if response['type'] == "no_account":
                 messagebox.showerror("Account error", "Account doesnot exists on our system")
             elif response['type'] == "incorrect_password":
@@ -196,7 +186,6 @@ class ForgotPassword:
         self.sendotp_button = Button(self.window, image=self.sendotp_img, relief=FLAT, activebackground="white"
                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_sendotp)
         self.sendotp_button.place(x=860, y=663)
-        # self.sendotp_button.is_clicked = False
 
         self.signin_label1 = Label(self.window, text="Go back to ", bg="white", fg="#000000", font=("Inter", 11, "bold"))
         self.signin_label1.place(x=853, y=741)
@@ -217,18 +206,13 @@ class ForgotPassword:
                 messagebox.showerror("Empty field","Enter phonenumber")
             else:
                 try:
-                    self.socket_connection.connect()
                     request = {
                         'type': 'forgot_password',
                         'email': self.email_entry.get() ,
                         'phone': f"+977{self.phone_entry.get()}"
                     }
-                    request_json = json.dumps(request)
-                    self.socket_connection.send(request_json)
-                    response_json = self.socket_connection.receive()
-                    response = json.loads(response_json)
-                    # self.socket_connection.send(request)
-                    # response = self.socket_connection.receive()
+                    self.socket_connection.send(request)
+                    response = self.socket_connection.receive()
                     if response['type'] == "no_account":
                         messagebox.showerror("Incorrect id or phonenumber","Credentials doesn't matched with our system")
                     elif response['type'] == "error":
@@ -351,19 +335,14 @@ class ChangePassword:
             messagebox.showerror("Mismatch","Password mismatch")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'change_password',
                     'email': self.email ,
                     'phone': self.phone,
                     'password': self.newpassword_entry.get()
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "password_changed":
                     self.newpassword_entry.delete(0, END)
                     self.confirmpassword_entry.delete(0, END)
@@ -533,18 +512,13 @@ class Signup:
         Signup.password= self.newpassword_entry.get()
 
         try:
-            self.socket_connection.connect()
             request = {
                 'type': 'verify_signup',
                 'email': self.newemail_entry.get() ,
                 'phone': f"+977{self.phonenumber_entry.get()}"
             }
-            request_json = json.dumps(request)
-            self.socket_connection.send(request_json)
-            response_json = self.socket_connection.receive()
-            response = json.loads(response_json)
-            # self.socket_connection.send(request)
-            # response = self.socket_connection.receive()
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
             if response['type'] == "email_exists":
                 messagebox.showerror("Email exists","Email already in use. Choose different email address")
             elif response['type'] == "otp_failed":
@@ -677,7 +651,6 @@ class VerifyOTP:
 
     def verified(self):
         try:
-            self.socket_connection.connect()
             request = {
                 'type': 'signup',
                 'name': self.fname ,
@@ -687,12 +660,8 @@ class VerifyOTP:
                 'bday': self.bday,
                 'password': self.password
             }
-            request_json = json.dumps(request)
-            self.socket_connection.send(request_json)
-            response_json = self.socket_connection.receive()
-            response = json.loads(response_json)
-            # self.socket_connection.send(request)
-            # response = self.socket_connection.receive()
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
             if response['type'] == "signup_success":
                 messagebox.showinfo("Success", "Account has been created. Proceed to signin")
                 self.goto_signin()
@@ -730,7 +699,7 @@ class VerifyOTP:
 
 def win():
         window = Tk()
-        socket_connection = SocketConnection('100.108.66.28',1234)
+        socket_connection = connection.SocketConnection() 
         Signin(window, socket_connection)
         window.mainloop()
 

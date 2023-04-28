@@ -2,9 +2,9 @@ from tkinter import *
 from PIL import ImageTk
 from tkinter import messagebox
 from datetime import *
-import json
 
 class Home:
+    message = None
     def __init__(self,window,email,name,socket_connection):
         self.window = window
         self.window.geometry("1906x952+5+9")
@@ -135,6 +135,7 @@ class Home:
             button.configure(image=normal_img)
 
         self.current_frame = None
+        self.current_bodybox = None
 
     ######################################################################
     ########################   H O M E   #################################
@@ -189,7 +190,7 @@ class Home:
         self.message_entry.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.configure(command=self.message_entry.yview)
         self.scrollbar.place(x=1128, y =368, height =365)
-        
+
         self.send_img = ImageTk.PhotoImage \
             (file="images\\send.png")
         self.send_button = Button(self.current_frame, image=self.send_img, relief=FLAT, activebackground="white"
@@ -223,41 +224,36 @@ class Home:
             messagebox.showerror("Empty field","Enter your message")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'check_receipent',
                     'receipentid': self.toemail_entry.get() ,
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "receipent_exists":
                     receivername = response['receivername']
-                    print(receivername)
-                    self.socket_connection.connect()
-                    request = {
-                        'type': 'client_message',
-                        'sendername': self.currentusr_name,
-                        'senderid': self.currentusr_email,
-                        'receivername': receivername,
-                        'receiverid': self.toemail_entry.get(),
-                        'subject': self.subject_entry.get(),
-                        'body': self.message_entry.get("1.0", "end-1c")
-                    }
-                    request_json = json.dumps(request)
-                    self.socket_connection.send(request_json)
-                    response_json = self.socket_connection.receive()
-                    response = json.loads(response_json)
-                    if response['type'] =="message_sent":
-                        self.toemail_entry.delete(0, END)
-                        self.subject_entry.delete(0, END)
-                        self.message_entry.delete("1.0", END)
-                        messagebox.showinfo("Message sent","Message sent successfully")
-                    elif response['type'] == "message_sent_failed":
-                        messagebox.showerror("Failed","Failed to send a message")
+                    try:
+                        request = {
+                            'type': 'client_message',
+                            'sendername': self.currentusr_name,
+                            'senderid': self.currentusr_email,
+                            'receivername': receivername,
+                            'receiverid': self.toemail_entry.get(),
+                            'subject': self.subject_entry.get(),
+                            'body': self.message_entry.get("1.0", "end-1c")
+                        }
+                        self.socket_connection.send(request)
+                        response = self.socket_connection.receive()
+                        if response['type'] =="message_sent":
+                            self.toemail_entry.delete(0, END)
+                            self.subject_entry.delete(0, END)
+                            self.message_entry.delete("1.0", END)
+                            messagebox.showinfo("Message sent","Message sent successfully")
+                        elif response['type'] == "message_sent_failed":
+                            messagebox.showerror("Failed","Failed to send a message")
+                    except:
+                        messagebox.showerror("Error","Issue")
+
                 elif response['type'] == "no_receipent":
                     messagebox.showerror("Invalid receipent","Receipent address doesnot exists")
                 elif response['type'] == "error":
@@ -281,38 +277,122 @@ class Home:
                             (file="images\\list.png")
         self.inboxlist_label = Label(self.current_frame, image=self.inboxlist_frame_img, bg="#ECEBFF")
         self.inboxlist_label.place(x=0, y=0)
-        self.inbox_listbox = Listbox(self.inboxlist_label,background='red')
-        # inbox_listbox.bind("<<ListboxSelect>>", show_message)
-        self.inbox_listbox.place(x=30,y=90, width=455, height=710)
-        
+        self.inbox_listbox = Listbox(self.inboxlist_label,background='white',height=20, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
+        self.inbox_listbox.place(x=30,y=90, width=455)
+
         self.starinb_img = ImageTk.PhotoImage \
                             (file="images\\star.png")
         self.starinb_frame_label = Label(self.inboxlist_label, image=self.starinb_img, bg="white")
         self.starinb_frame_label.place(x=84,y=27)
         self.inbox_heading = Label(self.inboxlist_label, text="Inbox", font=("Inter", 14, "bold"), bg="white", fg='#000000')
         self.inbox_heading.place(x=128, y=27)
+        self.refreshinbox_img = ImageTk.PhotoImage \
+            (file="images\\refresh.png")
+        self.refreshinbox_button = Button(self.inboxlist_label, image=self.refreshinbox_img, relief=FLAT, activebackground="white"
+                                   , borderwidth=0, background="white", cursor="hand2", command=self.update_inbox)
+        self.refreshinbox_button.place(x=400, y=30)
 
         self.inboxbx_frame_img = ImageTk.PhotoImage \
                             (file="images\\box.png")
         self.inboxbx_label = Label(self.current_frame, image=self.inboxbx_frame_img, bg="#ECEBFF")
         self.inboxbx_label.place(x=527, y=0)
-        self.inboxbody_frame = Label(self.inboxbx_label, background='red')
-        self.inboxbody_frame.place(x=18, y=18, width=906, height=788)
-        self.body_text = Text(self.inboxbody_frame)
-        self.body_text.pack(side="left", fill="both", expand=True)
-        # try:
-        #     self.socket_connection.connect()
-        #     self.socket_connection.send(f"request_inbox_message|{self.currentusr_email}")
-        #     response = self.socket_connection.receive()
-        #     if response == "empty_inbox":
-        #         messagebox.showerror("Empty Inbox","Your inbox is empty")
-        #     elif response == "error":
-        #         messagebox.showerror("Server issue","Server is disconnected")
-        #     else:
-        #         pass
 
-        # except BaseException as msg:
-        #     print(msg)
+        self.current_bodybox = Frame(self.inboxbx_label, bg='white')
+        self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+        self.inbox_listbox.bind("<<ListboxSelect>>", self.show_inbox)
+        self.update_inbox()
+
+    def get_inbox(self):
+        try:
+            request = {
+                'type': 'request_inbox_message',
+                'by': self.currentusr_email
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            return response
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def update_inbox(self):
+        response = self.get_inbox()
+        if response['type'] == "empty_inbox":
+            messagebox.showinfo("Empty inbox","Your inbox is empty")
+        elif response['type'] == "inbox_found":
+            Home.message = response['inbox']
+            messages = response['inbox']
+            self.inbox_listbox.delete(0, END)
+            for message in messages:
+                self.inbox_listbox.insert(END, f"--> {message[1]}   ( {message[5]} )")
+
+    def show_inbox(self, event):
+        selection=event.widget.curselection()
+        if selection:
+            index = selection[0]
+            messages = Home.message 
+            message = messages[index]
+
+            if self.current_bodybox is not None:
+                self.current_bodybox.destroy()
+
+            self.current_bodybox = Frame(self.inboxbx_label, bg='white')
+            self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+            self.nstarinbox_img = ImageTk.PhotoImage \
+                (file="images\\nstar.png")
+            self.ystarinbox_img = ImageTk.PhotoImage \
+                (file="images\\ystar.png")
+            self.starinbox_button = Button(self.current_bodybox, image=self.nstarinbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.starinbox_button.place(x=695, y=15)
+
+            self.deleteinbox_img = ImageTk.PhotoImage \
+                (file="images\\delete.png")
+            self.deleteinbox_button = Button(self.current_bodybox, image=self.deleteinbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.deleteinbox_button.place(x=745, y=15)
+
+            self.subject_inblabel = Label(self.current_bodybox, text="", font=("Inter", 14, "bold"), bg="white", fg='#000000')
+            self.subject_inblabel.place(x=55,y=50)
+            self.time_inblabel = Label(self.current_bodybox, text="", font=("Inter", 11, "italic"), bg="white", fg='#000000')
+            self.time_inblabel.place(x=600,y=100)
+            self.from_inblabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+            self.from_inblabel.place(x=55,y=100)
+            self.fromemail_inblabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+            self.fromemail_inblabel.place(x= 90, y=130)
+            self.to_inblabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+            self.to_inblabel.place(x=55,y=167)
+            self.toemail_inblabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+            self.toemail_inblabel.place(x= 130, y=170)
+            self.inboxbody_text = Text(self.current_bodybox, state='normal', highlightthickness=0 ,wrap="word",padx=11,pady=11,relief=FLAT, bg="white", fg="black",font=("Inter", 12))
+            self.inboxbody_text.place(x=55,y=220,width=835, height=545)
+            self.scrollbar_inbox = Scrollbar(self.current_bodybox, orient='vertical', cursor="hand2", width=15)
+            self.inboxbody_text.configure(yscrollcommand=self.scrollbar_inbox.set)
+            self.scrollbar_inbox.configure(command=self.inboxbody_text.yview)
+            self.scrollbar_inbox.place(x=875, y=226, height =535)
+
+            self.subject_inblabel.configure(text=f"{message[5]}")
+            self.time_inblabel.configure(text=f"{message[0]}")
+            self.from_inblabel.configure(text=f"By: {message[1]}")
+            self.fromemail_inblabel.configure(text=f"< {message[2]} >")
+            self.to_inblabel.configure(text=f"To: me, ")
+            self.toemail_inblabel.configure(text=f"< {message[4]} >")
+            self.inboxbody_text.insert(END, f"{message[6]}")
+            self.inboxbody_text.configure(state='disabled')
+
+            self.replyinbox_img = ImageTk.PhotoImage \
+                (file="images\\reply.png")
+            self.replyinbox_button = Button(self.current_bodybox, image=self.replyinbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.replyinbox_button.place(x=70, y=770)
+
+            self.forwardinbox_img = ImageTk.PhotoImage \
+                (file="images\\forward.png")
+            self.forwardinbox_button = Button(self.current_bodybox, image=self.forwardinbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.forwardinbox_button.place(x=180, y=770)
 
     ######################################################################
     #######################   S E N T   ##################################
@@ -325,21 +405,128 @@ class Home:
         self.current_frame = Frame(self.window, bg="#ECEBFF")
         self.current_frame.place(x=413, y=98, width=1480, height=837)
 
-        self.starredlist_frame_img = ImageTk.PhotoImage \
+        self.sentlist_frame_img = ImageTk.PhotoImage \
                             (file="images\\list.png")
-        self.starredlist_label = Label(self.current_frame, image=self.starredlist_frame_img, bg="#ECEBFF")
-        self.starredlist_label.place(x=0, y=0)
-        self.starstarred_img = ImageTk.PhotoImage \
-                            (file="images\\star.png")
-        self.starstarred_frame_label = Label(self.starredlist_label, image=self.starstarred_img, bg="white")
-        self.starstarred_frame_label.place(x=84,y=27)
-        self.starred_heading = Label(self.starredlist_label, text="Sent", font=("Inter", 14, "bold"), bg="white", fg='#000000')
-        self.starred_heading.place(x=128, y=27)
+        self.sentlist_label = Label(self.current_frame, image=self.sentlist_frame_img, bg="#ECEBFF")
+        self.sentlist_label.place(x=0, y=0)
+        self.sentbox_listbox = Listbox(self.sentlist_label,background='white',height=20, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
+        self.sentbox_listbox.place(x=30,y=90, width=455)
 
-        self.starredbx_frame_img = ImageTk.PhotoImage \
+        self.starsent_img = ImageTk.PhotoImage \
+                            (file="images\\star.png")
+        self.starsent_frame_label = Label(self.sentlist_label, image=self.starsent_img, bg="white")
+        self.starsent_frame_label.place(x=84,y=27)
+        self.sent_heading = Label(self.sentlist_label, text="Sent", font=("Inter", 14, "bold"), bg="white", fg='#000000')
+        self.sent_heading.place(x=128, y=27)
+        self.refreshsent_img = ImageTk.PhotoImage \
+            (file="images\\refresh.png")
+        self.refreshsent_button = Button(self.sentlist_label, image=self.refreshsent_img, relief=FLAT, activebackground="white"
+                                   , borderwidth=0, background="white", cursor="hand2", command=self.update_sentbox)
+        self.refreshsent_button.place(x=400, y=30)
+
+        self.sentbx_frame_img = ImageTk.PhotoImage \
                             (file="images\\box.png")
-        self.starredbx_label = Label(self.current_frame, image=self.starredbx_frame_img, bg="#ECEBFF")
-        self.starredbx_label.place(x=527, y=0)
+        self.sentbx_label = Label(self.current_frame, image=self.sentbx_frame_img, bg="#ECEBFF")
+        self.sentbx_label.place(x=527, y=0)
+
+        self.current_bodybox = Frame(self.sentbx_label, bg='white')
+        self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+        self.sentbox_listbox.bind("<<ListboxSelect>>", self.show_sentbox)
+        self.update_sentbox()
+
+    def get_sentbox(self):
+        try:
+            request = {
+                'type': 'request_sentbox_message',
+                'by': self.currentusr_email
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            return response
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def update_sentbox(self):
+        response = self.get_sentbox()
+        if response['type'] == "empty_sentbox":
+            messagebox.showinfo("Empty sentbox","Your sentbox is empty")
+        elif response['type'] == "sentbox_found":
+            Home.message = response['sentbox']
+            messages = response['sentbox']
+            self.sentbox_listbox.delete(0, END)
+            for message in messages:
+                self.sentbox_listbox.insert(END, f"--> {message[3]}   ( {message[5]} )")
+        elif response['type'] == "error":
+            messagebox.showerror("Error","Error")
+
+    def show_sentbox(self, event):
+        selection=event.widget.curselection()
+        if selection:
+            index = selection[0]
+            messages = Home.message 
+            message = messages[index]
+
+            if self.current_bodybox is not None:
+                self.current_bodybox.destroy()
+
+            self.current_bodybox = Frame(self.sentbx_label, bg='white')
+            self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+            self.nstarsentbox_img = ImageTk.PhotoImage \
+                (file="images\\nstar.png")
+            self.ystarsentbox_img = ImageTk.PhotoImage \
+                (file="images\\ystar.png")
+            self.starsentbox_button = Button(self.current_bodybox, image=self.nstarsentbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.starsentbox_button.place(x=695, y=15)
+
+            self.deletesentbox_img = ImageTk.PhotoImage \
+                (file="images\\delete.png")
+            self.deletesentbox_button = Button(self.current_bodybox, image=self.deletesentbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.deletesentbox_button.place(x=745, y=15)
+
+            self.subject_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 14, "bold"), bg="white", fg='#000000')
+            self.subject_sntlabel.place(x=55,y=50)
+            self.time_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "italic"), bg="white", fg='#000000')
+            self.time_sntlabel.place(x=600,y=100)
+            self.to_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+            self.to_sntlabel.place(x=55,y=100)
+            self.toemail_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+            self.toemail_sntlabel.place(x= 90, y=130)
+            self.from_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+            self.from_sntlabel.place(x=55,y=167)
+            self.fromemail_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+            self.fromemail_sntlabel.place(x= 130, y=170)
+            self.sentbody_text = Text(self.current_bodybox, state='normal', highlightthickness=0 ,wrap="word",padx=11,pady=11,relief=FLAT, bg="white", fg="black",font=("Inter", 12))
+            self.sentbody_text.place(x=55,y=220,width=835, height=545)
+            self.scrollbar_sentbox = Scrollbar(self.current_bodybox, orient='vertical', cursor="hand2", width=15)
+            self.sentbody_text.configure(yscrollcommand=self.scrollbar_sentbox.set)
+            self.scrollbar_sentbox.configure(command=self.sentbody_text.yview)
+            self.scrollbar_sentbox.place(x=875, y=226, height =535)
+            
+            self.subject_sntlabel.configure(text=f"{message[5]}")
+            self.time_sntlabel.configure(text=f"{message[0]}")
+            self.to_sntlabel.configure(text=f"To: {message[3]}")
+            self.toemail_sntlabel.configure(text=f"< {message[4]} >")
+            self.from_sntlabel.configure(text=f"By: me, ")
+            self.fromemail_sntlabel.configure(text=f"< {message[2]} >")
+            self.sentbody_text.insert(END, f"{message[6]}")
+            self.sentbody_text.configure(state='disabled')
+
+            self.replysentbox_img = ImageTk.PhotoImage \
+                (file="images\\reply.png")
+            self.replysentbox_button = Button(self.current_bodybox, image=self.replysentbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.replysentbox_button.place(x=70, y=770)
+
+            self.forwardsentbox_img = ImageTk.PhotoImage \
+                (file="images\\forward.png")
+            self.forwardsentbox_button = Button(self.current_bodybox, image=self.forwardsentbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+            self.forwardsentbox_button.place(x=180, y=770)
 
 
     ######################################################################
@@ -435,17 +622,12 @@ class Home:
         self.deleteacc_button.place(x=87, y=595)
 
         try:
-            self.socket_connection.connect()
             request = {
                 'type': 'view_profile',
                 'email': self.currentusr_email
             }
-            request_json = json.dumps(request)
-            self.socket_connection.send(request_json)
-            response_json = self.socket_connection.receive()
-            response = json.loads(response_json)
-            # self.socket_connection.send(request)
-            # response = self.socket_connection.receive()
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
             if response['type'] == "error":
                 messagebox.showerror("Server issue","Server disconnected")
             elif response['type'] == "my_profile":
@@ -509,18 +691,13 @@ class Home:
             messagebox.showerror("Empty field","Enter password")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'delete_account',
                     'email': self.currentusr_email,
                     'password': self.currentpwd_entry.get()
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "wrong_password":
                     messagebox.showerror("Wrong password","Password doesn't match with our system")
                 elif response['type'] == "delete_account_success":
@@ -589,19 +766,14 @@ class Home:
             messagebox.showerror("Mismatch","Password Mismatch")
         else:
             try:
-                self.socket_connection.connect()
                 request = {
                     'type': 'update_password',
                     'email': self.currentusr_email ,
                     'password': self.currentpassword_entry.get(),
                     'newpassword': self.newpassword_entry.get()
                 }
-                request_json = json.dumps(request)
-                self.socket_connection.send(request_json)
-                response_json = self.socket_connection.receive()
-                response = json.loads(response_json)
-                # self.socket_connection.send(request)
-                # response = self.socket_connection.receive()
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
                 if response['type'] == "wrong_password":
                     messagebox.showerror("Wrong password","Current password doesn't  match with our system")
                 elif response['type'] == "update_password_success":
@@ -623,6 +795,7 @@ class Home:
         from signin import Signin
         ask = messagebox.askyesnocancel("Confirm Logout", "Do you want to logout?")
         if ask is True:
+            Home.message = None
             self.currentusr_email= None
             self.currentusr_name= None
             win = Toplevel()

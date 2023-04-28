@@ -6,6 +6,7 @@ server_socket.bind(('100.108.66.28',1234))
 server_socket.listen()
 
 client_socket, address = server_socket.accept()
+
 data = b''
 while True:
     chunk = client_socket.recv(4096)

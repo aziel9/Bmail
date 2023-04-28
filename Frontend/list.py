@@ -19,6 +19,7 @@ def get_messages():
 
 def update_listbox():
     messages = get_messages()
+    print(messages)
     listbox.delete(0, tk.END)
     for message in messages:
         listbox.insert(tk.END, f"{message[1]}")
