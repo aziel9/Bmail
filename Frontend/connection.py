@@ -33,31 +33,3 @@ class SocketConnection:
         
     def close(self):
         self.socket.close()
-
-
-
-# import socket
-# import json
-
-# class SocketConnection:
-#     def __init__(self, host, port):
-#         self.host = host
-#         self.port = port
-#         self.socket = None
-    
-#     def connect(self):
-#         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         self.socket.connect((self.host, self.port))
-
-#     def send(self, message):
-#         request_json = json.dumps(message)
-#         self.socket.send(request_json.encode())
-    
-#     def receive(self):
-#         response_json = self.socket.recv(4096)
-#         response = json.loads(response_json.decode())
-#         return response
-    
-#     def close(self):
-#         self.socket.close()
-

@@ -30,7 +30,6 @@ def handle_client(c, addr):
                 msg_length_bytes = c.recv(4)
                 if msg_length_bytes:
                     msg_length = int.from_bytes(msg_length_bytes, byteorder='big')
-                    # print(msg_length)
                     data = b''
                     while len(data) < msg_length:
                         chunk = c.recv(min(msg_length - len(data), 1024))
