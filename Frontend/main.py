@@ -5,6 +5,7 @@ from datetime import *
 
 class Home:
     message = None
+    message_selected = None
     def __init__(self,window,email,name,socket_connection):
         self.window = window
         self.window.geometry("1906x952+5+9")
@@ -148,7 +149,7 @@ class Home:
     #####################   C O M P O S E    #############################
     ######################################################################
 
-    def click_compose(self):
+    def click_compose(self, type=None):
         if self.current_frame is not None:
             self.current_frame.destroy()
         self.window.title("Compose")
@@ -195,7 +196,38 @@ class Home:
             (file="images\\send.png")
         self.send_button = Button(self.current_frame, image=self.send_img, relief=FLAT, activebackground="white"
                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_send)
-        self.send_button.place(x=963, y=750)
+        self.send_button.place(x=1003, y=750)
+
+        self.clear_img = ImageTk.PhotoImage \
+            (file="images\\clear.png")
+        self.clear_button = Button(self.current_frame, image=self.clear_img, relief=FLAT, activebackground="white"
+                                   , borderwidth=0, background="white", cursor="hand2", command=self.click_clear)
+        self.clear_button.place(x=883, y=750)
+
+        if type == 'inbreply':
+            msgtoreply = Home.message_selected
+            self.toemail_entry.insert(0,msgtoreply[2])
+            self.subject_entry.delete(0, END)
+            self.subject_entry.insert(0,f"[Re] "+msgtoreply[5])
+
+        elif type == 'inbforward':
+            msgtoforward = Home.message_selected
+            self.subject_entry.delete(0, END)
+            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[5])
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[1]}, < {msgtoforward[2]} >\nDate: {msgtoforward[0]}\nSubject: {msgtoforward[5]}\nTo: {msgtoforward[3]},  < {msgtoforward[4]}  >\n\n{msgtoforward[6]}")
+
+        elif type == 'sntreply':
+            msgtoreply = Home.message_selected
+            self.toemail_entry.insert(0,msgtoreply[4])
+            self.subject_entry.delete(0, END)
+            self.subject_entry.insert(0,f"[Re] "+msgtoreply[5])
+            
+
+        elif type == 'sntforward':
+            msgtoforward = Home.message_selected
+            self.subject_entry.delete(0, END)
+            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[5])
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[1]}, < {msgtoforward[2]} >\nDate: {msgtoforward[0]}\nSubject: {msgtoforward[5]}\nTo: {msgtoforward[3]},  < {msgtoforward[4]}  >\n\n{msgtoforward[6]}")
 
     def on_message_paste(self, event):
         self.message_entry.update_idletasks()
@@ -210,6 +242,12 @@ class Home:
         enter_subj=self.subject_entry.get()
         if enter_subj == "":
             self.subject_entry.insert(0, 'Subject:')
+
+    def click_clear(self):
+        self.toemail_entry.delete(0, END)
+        self.subject_entry.delete(0, END)
+        self.subject_entry.insert(0, 'Subject:')
+        self.message_entry.delete('1.0', END)
 
     def click_send(self):
         if not self.fromemail_entry.get():
@@ -277,8 +315,13 @@ class Home:
                             (file="images\\list.png")
         self.inboxlist_label = Label(self.current_frame, image=self.inboxlist_frame_img, bg="#ECEBFF")
         self.inboxlist_label.place(x=0, y=0)
-        self.inbox_listbox = Listbox(self.inboxlist_label,background='white',height=20, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
+
+        self.inbox_listbox = Listbox(self.inboxlist_label,background='white',height=25, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
         self.inbox_listbox.place(x=30,y=90, width=455)
+        self.scrollbar_inboxlist = Scrollbar(self.inboxlist_label, orient='vertical', cursor="hand2", width=15)
+        self.inbox_listbox.configure(yscrollcommand=self.scrollbar_inboxlist.set)
+        self.scrollbar_inboxlist.configure(command=self.inbox_listbox.yview)
+        self.scrollbar_inboxlist.place(x=490, y=90, height =700)
 
         self.starinb_img = ImageTk.PhotoImage \
                             (file="images\\star.png")
@@ -333,6 +376,7 @@ class Home:
             index = selection[0]
             messages = Home.message 
             message = messages[index]
+            Home.message_selected = message
 
             if self.current_bodybox is not None:
                 self.current_bodybox.destroy()
@@ -371,7 +415,7 @@ class Home:
             self.scrollbar_inbox = Scrollbar(self.current_bodybox, orient='vertical', cursor="hand2", width=15)
             self.inboxbody_text.configure(yscrollcommand=self.scrollbar_inbox.set)
             self.scrollbar_inbox.configure(command=self.inboxbody_text.yview)
-            self.scrollbar_inbox.place(x=875, y=226, height =535)
+            self.scrollbar_inbox.place(x=880, y=226, height =535)
 
             self.subject_inblabel.configure(text=f"{message[5]}")
             self.time_inblabel.configure(text=f"{message[0]}")
@@ -385,14 +429,21 @@ class Home:
             self.replyinbox_img = ImageTk.PhotoImage \
                 (file="images\\reply.png")
             self.replyinbox_button = Button(self.current_bodybox, image=self.replyinbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_replyinb)
             self.replyinbox_button.place(x=70, y=770)
 
             self.forwardinbox_img = ImageTk.PhotoImage \
                 (file="images\\forward.png")
             self.forwardinbox_button = Button(self.current_bodybox, image=self.forwardinbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdinb)
             self.forwardinbox_button.place(x=180, y=770)
+
+    def click_replyinb(self):
+        self.click_compose('inbreply')
+
+    def click_frwdinb(self):
+        self.click_compose('inbforward')
+
 
     ######################################################################
     #######################   S E N T   ##################################
@@ -409,8 +460,12 @@ class Home:
                             (file="images\\list.png")
         self.sentlist_label = Label(self.current_frame, image=self.sentlist_frame_img, bg="#ECEBFF")
         self.sentlist_label.place(x=0, y=0)
-        self.sentbox_listbox = Listbox(self.sentlist_label,background='white',height=20, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
+        self.sentbox_listbox = Listbox(self.sentlist_label,background='white',height=25, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
         self.sentbox_listbox.place(x=30,y=90, width=455)
+        self.scrollbar_sentboxlist = Scrollbar(self.sentlist_label, orient='vertical', cursor="hand2", width=15)
+        self.sentbox_listbox.configure(yscrollcommand=self.scrollbar_sentboxlist.set)
+        self.scrollbar_sentboxlist.configure(command=self.sentbox_listbox.yview)
+        self.scrollbar_sentboxlist.place(x=490, y=90, height =700)
 
         self.starsent_img = ImageTk.PhotoImage \
                             (file="images\\star.png")
@@ -467,6 +522,7 @@ class Home:
             index = selection[0]
             messages = Home.message 
             message = messages[index]
+            Home.message_selected = message
 
             if self.current_bodybox is not None:
                 self.current_bodybox.destroy()
@@ -505,7 +561,7 @@ class Home:
             self.scrollbar_sentbox = Scrollbar(self.current_bodybox, orient='vertical', cursor="hand2", width=15)
             self.sentbody_text.configure(yscrollcommand=self.scrollbar_sentbox.set)
             self.scrollbar_sentbox.configure(command=self.sentbody_text.yview)
-            self.scrollbar_sentbox.place(x=875, y=226, height =535)
+            self.scrollbar_sentbox.place(x=880, y=226, height =535)
             
             self.subject_sntlabel.configure(text=f"{message[5]}")
             self.time_sntlabel.configure(text=f"{message[0]}")
@@ -519,14 +575,20 @@ class Home:
             self.replysentbox_img = ImageTk.PhotoImage \
                 (file="images\\reply.png")
             self.replysentbox_button = Button(self.current_bodybox, image=self.replysentbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_replysnt)
             self.replysentbox_button.place(x=70, y=770)
 
             self.forwardsentbox_img = ImageTk.PhotoImage \
                 (file="images\\forward.png")
             self.forwardsentbox_button = Button(self.current_bodybox, image=self.forwardsentbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdsnt)
             self.forwardsentbox_button.place(x=180, y=770)
+
+    def click_replysnt(self):
+        self.click_compose('sntreply')
+
+    def click_frwdsnt(self):
+        self.click_compose('sntforward')
 
 
     ######################################################################
@@ -796,6 +858,7 @@ class Home:
         ask = messagebox.askyesnocancel("Confirm Logout", "Do you want to logout?")
         if ask is True:
             Home.message = None
+            Home.message_selected = None
             self.currentusr_email= None
             self.currentusr_name= None
             win = Toplevel()
@@ -862,10 +925,10 @@ class DeleteAccount:
         if ask is True:
             quit()
 
-def win():
-    window = Tk()
-    Home(window)
-    window.mainloop()
+# def win():
+#     window = Tk()
+#     Home(window)
+#     window.mainloop()
 
-if __name__ == '__main__':
-    win()
+# if __name__ == '__main__':
+#     win()

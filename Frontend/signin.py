@@ -93,10 +93,6 @@ class Signin:
             }
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
-<<<<<<< HEAD
-=======
-            print(response)
->>>>>>> 0f11a791f8da6bfca4c5a7b895cf78ad479a5e12
             if response['type'] == "no_account":
                 messagebox.showerror("Account error", "Account doesnot exists on our system")
             elif response['type'] == "incorrect_password":
