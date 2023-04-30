@@ -388,13 +388,15 @@ class Home:
             self.ystarinbox_img = ImageTk.PhotoImage \
                 (file="images\\ystar.png")
             self.starinbox_button = Button(self.current_bodybox, image=self.nstarinbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_starinbox)
             self.starinbox_button.place(x=695, y=15)
+            if message[6] == True:
+                self.starinbox_button.configure(image=self.ystarinbox_img, command=self.click_unstarinbox)
 
             self.deleteinbox_img = ImageTk.PhotoImage \
                 (file="images\\delete.png")
             self.deleteinbox_button = Button(self.current_bodybox, image=self.deleteinbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_delinbox)
             self.deleteinbox_button.place(x=745, y=15)
 
             self.subject_inblabel = Label(self.current_bodybox, text="", font=("Inter", 14, "bold"), bg="white", fg='#000000')
@@ -436,6 +438,64 @@ class Home:
             self.forwardinbox_button = Button(self.current_bodybox, image=self.forwardinbox_img, relief=FLAT, activebackground="white"
                                     , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdinb)
             self.forwardinbox_button.place(x=180, y=770)
+
+    def click_starinbox(self):
+        try:
+            inbtostar = Home.message_selected
+            request = {
+                'type': 'starring_message',
+                'label': 'star_inbox',
+                'messageid': inbtostar[0]
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "message_starred_on_inbox":
+                self.update_inbox()
+                self.starinbox_button.configure(image=self.ystarinbox_img, command=self.click_unstarinbox)
+            elif response['type'] == "error":
+                messagebox.showerror("Failed","Fail to mark as starred")
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def click_unstarinbox(self):
+        try:
+            inbtounstar = Home.message_selected
+            request = {
+                'type': 'starring_message',
+                'label': 'unstar_inbox',
+                'messageid': inbtounstar[0]
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "message_unstarred_on_inbox":
+                self.update_inbox()
+                self.starinbox_button.configure(image=self.nstarinbox_img, command=self.click_starinbox)
+            elif response['type'] == "error":
+                messagebox.showerror("Failed","Fail to mark as unstarred")
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+    
+    def click_delinbox(self):
+        ask = messagebox.askyesnocancel("Delete?","This email will be deleted permanently")
+        if ask is True:
+            inbtodel = Home.message_selected
+            try:
+                request = {
+                    'type': 'delete_message',
+                    'label': 'inbox',
+                    'messageid': inbtodel[0]
+                }
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
+                if response['type'] == "message_deleted_from_inbox":
+                    self.click_inbox()
+                elif response['type'] == "error":
+                    messagebox.showerror("Failed","Message deletion failed")
+            except ConnectionRefusedError as msg:
+                messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+                print(msg)
 
     def click_replyinb(self):
         self.click_compose('inbreply')
@@ -534,13 +594,15 @@ class Home:
             self.ystarsentbox_img = ImageTk.PhotoImage \
                 (file="images\\ystar.png")
             self.starsentbox_button = Button(self.current_bodybox, image=self.nstarsentbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_starsent)
             self.starsentbox_button.place(x=695, y=15)
+            if message[6] == True:
+                self.starsentbox_button.configure(image=self.ystarsentbox_img, command=self.click_unstarsent)
 
             self.deletesentbox_img = ImageTk.PhotoImage \
                 (file="images\\delete.png")
             self.deletesentbox_button = Button(self.current_bodybox, image=self.deletesentbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_delsent)
             self.deletesentbox_button.place(x=745, y=15)
 
             self.subject_sntlabel = Label(self.current_bodybox, text="", font=("Inter", 14, "bold"), bg="white", fg='#000000')
@@ -582,6 +644,64 @@ class Home:
             self.forwardsentbox_button = Button(self.current_bodybox, image=self.forwardsentbox_img, relief=FLAT, activebackground="white"
                                     , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdsnt)
             self.forwardsentbox_button.place(x=180, y=770)
+
+    def click_starsent(self):
+        try:
+            snttostar = Home.message_selected
+            request = {
+                'type': 'starring_message',
+                'label': 'star_sent',
+                'messageid': snttostar[0]
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "message_starred_on_sent":
+                self.update_sentbox()
+                self.starsentbox_button.configure(image=self.ystarsentbox_img, command=self.click_unstarsent)
+            elif response['type'] == "error":
+                messagebox.showerror("Failed","Fail to mark as starred")
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def click_unstarsent(self):
+        try:
+            snttounstar = Home.message_selected
+            request = {
+                'type': 'starring_message',
+                'label': 'unstar_sent',
+                'messageid': snttounstar[0]
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "message_unstarred_on_sent":
+                self.update_sentbox()
+                self.starsentbox_button.configure(image=self.nstarsentbox_img, command=self.click_starsent)
+            elif response['type'] == "error":
+                messagebox.showerror("Failed","Fail to mark as unstarred")
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def click_delsent(self):
+        ask = messagebox.askyesnocancel("Delete?","This email will be deleted permanently")
+        if ask is True:
+            snttodel = Home.message_selected
+            try:
+                request = {
+                    'type': 'delete_message',
+                    'label': 'sent',
+                    'messageid': snttodel[0]
+                }
+                self.socket_connection.send(request)
+                response = self.socket_connection.receive()
+                if response['type'] == "message_deleted_from_sent":
+                    self.click_sent()
+                elif response['type'] == "error":
+                    messagebox.showerror("Failed","Message deletion failed")
+            except ConnectionRefusedError as msg:
+                messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+                print(msg)
 
     def click_replysnt(self):
         self.click_compose('sntreply')

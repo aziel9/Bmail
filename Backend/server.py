@@ -221,7 +221,7 @@ def handle_client(c, addr):
 
                 elif request['type'] == "request_sentbox_message":
                     try:
-                        query = """SELECT m.id, m.time, usen.name AS sendername, usen.email AS senderid, urec.name AS receivername, urec.email as receiverid, m.isstarbyrecv, m.subject,m.message FROM messages m 
+                        query = """SELECT m.id, m.time, usen.name AS sendername, usen.email AS senderid, urec.name AS receivername, urec.email as receiverid, m.isstarbysndr, m.subject,m.message FROM messages m 
                                 JOIN users usen ON m.sender = usen.id
                                 JOIN users urec ON m.receiver = urec.id
                                 WHERE m.sender = %s AND isdelbysndr = false ORDER BY id DESC"""
@@ -242,6 +242,104 @@ def handle_client(c, addr):
                             print(msg)
                     finally:
                         send(c, response)
+
+                elif request['type'] == 'starring_message':
+                    if request['label'] == 'star_inbox':
+                        try:
+                            query = "UPDATE messages SET isstarbyrecv=true WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_starred_on_inbox'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                    elif request['label'] == 'unstar_inbox':
+                        try:
+                            query = "UPDATE messages SET isstarbyrecv=false WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_unstarred_on_inbox'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                    elif request['label'] == 'star_sent':
+                        try:
+                            query = "UPDATE messages SET isstarbysndr=true WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_starred_on_sent'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                    elif request['label'] == 'unstar_sent':
+                        try:
+                            query = "UPDATE messages SET isstarbysndr=false WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_unstarred_on_sent'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                elif request['type'] == 'delete_message':
+                    if request['label'] == 'inbox':
+                        try:
+                            query = "UPDATE messages SET isdelbyrecv=true WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_deleted_from_inbox'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                    elif request['label'] == 'sent':
+                        try:
+                            query = "UPDATE messages SET isdelbysndr=true WHERE id=%s"
+                            values = (request['messageid'],)
+                            dbs_connection.update(query,values)
+                            response = {
+                                'type': 'message_deleted_from_sent'
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
 
                 elif request['type'] == "view_profile":
                     try:
