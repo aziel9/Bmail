@@ -249,7 +249,7 @@ def handle_client(c, addr):
                             query = "UPDATE messages SET isstarbyrecv=true WHERE id=%s"
                             values = (request['messageid'],)
                             action = dbs_connection.update(query,values)
-                            if action > 0:
+                            if action:
                                 query = "INSERT INTO starred(starredby, label, messageid) VALUES(%s, %s, %s)"
                                 values= (request['byuserid'], 'Inbox', request['messageid'])
                                 dbs_connection.insert(query,values)
@@ -269,7 +269,7 @@ def handle_client(c, addr):
                             query = "UPDATE messages SET isstarbyrecv=false WHERE id=%s"
                             values = (request['messageid'],)
                             action = dbs_connection.update(query,values)
-                            if action > 0:
+                            if action:
                                 query = "DELETE FROM starred WHERE starredby=%s AND label=%s AND messageid=%s"
                                 values = (request['byuserid'], 'Inbox', request['messageid'])
                                 dbs_connection.delete(query,values)
@@ -289,7 +289,7 @@ def handle_client(c, addr):
                             query = "UPDATE messages SET isstarbysndr=true WHERE id=%s"
                             values = (request['messageid'],)
                             action= dbs_connection.update(query,values)
-                            if action > 0:
+                            if action:
                                 query = "INSERT INTO starred(starredby, label, messageid) VALUES(%s, %s, %s)"
                                 values= (request['byuserid'], 'Sent', request['messageid'])
                                 dbs_connection.insert(query,values)
@@ -309,7 +309,7 @@ def handle_client(c, addr):
                             query = "UPDATE messages SET isstarbysndr=false WHERE id=%s"
                             values = (request['messageid'],)
                             action = dbs_connection.update(query,values)
-                            if action > 0:
+                            if action:
                                 query = "DELETE FROM starred WHERE starredby=%s AND label=%s AND messageid=%s"
                                 values = (request['byuserid'], 'Sent', request['messageid'])
                                 dbs_connection.delete(query,values)

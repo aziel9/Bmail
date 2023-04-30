@@ -1,4 +1,3 @@
-
 import psycopg2
 
 class DatabaseConnection:
@@ -104,10 +103,3 @@ class DatabaseConnection:
         self.connection.commit()
 
 DatabaseConnection()
-                
-
-
-
-
-
-
