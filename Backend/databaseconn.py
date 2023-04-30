@@ -7,7 +7,6 @@ class DatabaseConnection:
         self.d_connection()
         self.createtable()
 
-
     def d_connection(self):
         hostname = 'localhost'
         db = 'bmail'
@@ -18,10 +17,40 @@ class DatabaseConnection:
         self.cursor=self.connection.cursor()
 
     def createtable(self):
-        self.createusr_table = """CREATE TABLE IF NOT EXISTS user_data( fullname varchar(100), email varchar(100) PRIMARY KEY, phone varchar(50), gender varchar(20), bday text, ageaccount text,status varchar(20), password TEXT)"""
-        self.createmsg_table = """CREATE TABLE IF NOT EXISTS messages(  time TEXT, sendername varchar(100),senderid varchar(100), receivername varchar(100),receiverid varchar(100), subject TEXT, message TEXT)"""
+        self.createusr_table = """CREATE TABLE IF NOT EXISTS users (
+                                id SERIAL PRIMARY KEY,
+                                name VARCHAR(100),
+                                email VARCHAR(100) UNIQUE,
+                                phone VARCHAR(20),
+                                gender VARCHAR(10),
+                                bday VARCHAR(15),
+                                createdon VARCHAR(15),
+                                isDeleted  BOOLEAN DEFAULT false,
+                                picture TEXT,
+                                password TEXT NOT NULL
+                            )"""
+
+        self.createmsg_table = """CREATE TABLE IF NOT EXISTS messages (
+                                id SERIAL PRIMARY KEY,
+                                time VARCHAR(30),
+                                sender INTEGER REFERENCES users(id),
+                                receiver INTEGER REFERENCES users(id),
+                                isdelbyrecv BOOLEAN DEFAULT false,
+                                isdelbysndr BOOLEAN DEFAULT false,
+                                isstarbyrecv BOOLEAN DEFAULT false,
+                                isstarbysndr BOOLEAN DEFAULT false,
+                                subject TEXT,
+                                message TEXT
+                            )"""
+
+        self.createstar_table = """CREATE TABLE IF NOT EXISTS starred (
+                                starredby INTEGER REFERENCES users(id),
+                                messageid INTEGER REFERENCES messages(id)
+                            )"""
+
         self.cursor.execute(self.createusr_table)
         self.cursor.execute(self.createmsg_table)
+        self.cursor.execute(self.createstar_table)
         self.connection.commit()
 
     def __del__(self):
@@ -64,7 +93,6 @@ class DatabaseConnection:
         """ deletes the data from database"""
         self.cursor.execute(query, values)
         self.connection.commit()
-
 
 DatabaseConnection()
                 

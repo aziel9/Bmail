@@ -8,6 +8,7 @@ import main
 
 #Creates a class where the login form is displayed
 class Signin:
+    activeusr_id = None
     activeusr_name = None
     activeusr_email = None
     def __init__(self,window, socket_connection):
@@ -98,6 +99,7 @@ class Signin:
             elif response['type'] == "incorrect_password":
                 messagebox.showerror("Password error", "Incorrect password")
             elif response['type'] == "login_success":
+                Signin.activeusr_id = response['active_id']
                 Signin.activeusr_name = response['active_user']
                 Signin.activeusr_email = response['active_email']
                 self.signin_success()
@@ -126,10 +128,11 @@ class Signin:
             quit()
 
     def signin_success(self):
+        id = Signin.activeusr_id
         email= Signin.activeusr_email
         name= Signin.activeusr_name
         win = Toplevel()
-        main.Home(win, email, name, self.socket_connection)
+        main.Home(win, id,email, name, self.socket_connection)
         self.window.withdraw()
         win.deiconify()
 

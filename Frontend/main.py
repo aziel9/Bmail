@@ -6,12 +6,13 @@ from datetime import *
 class Home:
     message = None
     message_selected = None
-    def __init__(self,window,email,name,socket_connection):
+    def __init__(self,window,id,email,name,socket_connection):
         self.window = window
         self.window.geometry("1906x952+5+9")
         self.window.title("Home")
         self.window.resizable(False, False)
-
+        
+        self.currentusr_id = id
         self.currentusr_email = email
         self.currentusr_name = name
         self.socket_connection = socket_connection
@@ -206,28 +207,28 @@ class Home:
 
         if type == 'inbreply':
             msgtoreply = Home.message_selected
-            self.toemail_entry.insert(0,msgtoreply[2])
+            self.toemail_entry.insert(0,msgtoreply[3])
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0,f"[Re] "+msgtoreply[5])
+            self.subject_entry.insert(0,f"[Re] "+msgtoreply[7])
 
         elif type == 'inbforward':
             msgtoforward = Home.message_selected
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[5])
-            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[1]}, < {msgtoforward[2]} >\nDate: {msgtoforward[0]}\nSubject: {msgtoforward[5]}\nTo: {msgtoforward[3]},  < {msgtoforward[4]}  >\n\n{msgtoforward[6]}")
+            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[7])
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {msgtoforward[7]}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{msgtoforward[8]}")
 
         elif type == 'sntreply':
             msgtoreply = Home.message_selected
-            self.toemail_entry.insert(0,msgtoreply[4])
+            self.toemail_entry.insert(0,msgtoreply[5])
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0,f"[Re] "+msgtoreply[5])
+            self.subject_entry.insert(0,f"[Re] "+msgtoreply[7])
             
 
         elif type == 'sntforward':
             msgtoforward = Home.message_selected
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[5])
-            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[1]}, < {msgtoforward[2]} >\nDate: {msgtoforward[0]}\nSubject: {msgtoforward[5]}\nTo: {msgtoforward[3]},  < {msgtoforward[4]}  >\n\n{msgtoforward[6]}")
+            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[7])
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {msgtoforward[7]}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{msgtoforward[8]}")
 
     def on_message_paste(self, event):
         self.message_entry.update_idletasks()
@@ -269,14 +270,12 @@ class Home:
                 self.socket_connection.send(request)
                 response = self.socket_connection.receive()
                 if response['type'] == "receipent_exists":
-                    receivername = response['receivername']
+                    receiverid = response['receiverid']
                     try:
                         request = {
                             'type': 'client_message',
-                            'sendername': self.currentusr_name,
-                            'senderid': self.currentusr_email,
-                            'receivername': receivername,
-                            'receiverid': self.toemail_entry.get(),
+                            'sender': self.currentusr_id,
+                            'receiver': receiverid,
                             'subject': self.subject_entry.get(),
                             'body': self.message_entry.get("1.0", "end-1c")
                         }
@@ -350,7 +349,7 @@ class Home:
         try:
             request = {
                 'type': 'request_inbox_message',
-                'by': self.currentusr_email
+                'byid': self.currentusr_id
             }
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
@@ -368,7 +367,7 @@ class Home:
             messages = response['inbox']
             self.inbox_listbox.delete(0, END)
             for message in messages:
-                self.inbox_listbox.insert(END, f"--> {message[1]}   ( {message[5]} )")
+                self.inbox_listbox.insert(END, f"--> {message[2]}   ( {message[7]} )")
 
     def show_inbox(self, event):
         selection=event.widget.curselection()
@@ -417,13 +416,13 @@ class Home:
             self.scrollbar_inbox.configure(command=self.inboxbody_text.yview)
             self.scrollbar_inbox.place(x=880, y=226, height =535)
 
-            self.subject_inblabel.configure(text=f"{message[5]}")
-            self.time_inblabel.configure(text=f"{message[0]}")
-            self.from_inblabel.configure(text=f"By: {message[1]}")
-            self.fromemail_inblabel.configure(text=f"< {message[2]} >")
+            self.subject_inblabel.configure(text=f"{message[7]}")
+            self.time_inblabel.configure(text=f"{message[1]}")
+            self.from_inblabel.configure(text=f"By: {message[2]}")
+            self.fromemail_inblabel.configure(text=f"< {message[3]} >")
             self.to_inblabel.configure(text=f"To: me, ")
-            self.toemail_inblabel.configure(text=f"< {message[4]} >")
-            self.inboxbody_text.insert(END, f"{message[6]}")
+            self.toemail_inblabel.configure(text=f"< {message[5]} >")
+            self.inboxbody_text.insert(END, f"{message[8]}")
             self.inboxbody_text.configure(state='disabled')
 
             self.replyinbox_img = ImageTk.PhotoImage \
@@ -494,7 +493,7 @@ class Home:
         try:
             request = {
                 'type': 'request_sentbox_message',
-                'by': self.currentusr_email
+                'byid': self.currentusr_id
             }
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
@@ -512,7 +511,7 @@ class Home:
             messages = response['sentbox']
             self.sentbox_listbox.delete(0, END)
             for message in messages:
-                self.sentbox_listbox.insert(END, f"--> {message[3]}   ( {message[5]} )")
+                self.sentbox_listbox.insert(END, f"--> {message[4]}   ( {message[7]} )")
         elif response['type'] == "error":
             messagebox.showerror("Error","Error")
 
@@ -563,13 +562,13 @@ class Home:
             self.scrollbar_sentbox.configure(command=self.sentbody_text.yview)
             self.scrollbar_sentbox.place(x=880, y=226, height =535)
             
-            self.subject_sntlabel.configure(text=f"{message[5]}")
-            self.time_sntlabel.configure(text=f"{message[0]}")
-            self.to_sntlabel.configure(text=f"To: {message[3]}")
-            self.toemail_sntlabel.configure(text=f"< {message[4]} >")
+            self.subject_sntlabel.configure(text=f"{message[7]}")
+            self.time_sntlabel.configure(text=f"{message[1]}")
+            self.to_sntlabel.configure(text=f"To: {message[4]}")
+            self.toemail_sntlabel.configure(text=f"< {message[5]} >")
             self.from_sntlabel.configure(text=f"By: me, ")
-            self.fromemail_sntlabel.configure(text=f"< {message[2]} >")
-            self.sentbody_text.insert(END, f"{message[6]}")
+            self.fromemail_sntlabel.configure(text=f"< {message[3]} >")
+            self.sentbody_text.insert(END, f"{message[8]}")
             self.sentbody_text.configure(state='disabled')
 
             self.replysentbox_img = ImageTk.PhotoImage \
@@ -686,7 +685,7 @@ class Home:
         try:
             request = {
                 'type': 'view_profile',
-                'email': self.currentusr_email
+                'byid': self.currentusr_id
             }
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
@@ -755,6 +754,7 @@ class Home:
             try:
                 request = {
                     'type': 'delete_account',
+                    'byid': self.currentusr_id,
                     'email': self.currentusr_email,
                     'password': self.currentpwd_entry.get()
                 }
@@ -830,6 +830,7 @@ class Home:
             try:
                 request = {
                     'type': 'update_password',
+                    'byid': self.currentusr_id,
                     'email': self.currentusr_email ,
                     'password': self.currentpassword_entry.get(),
                     'newpassword': self.newpassword_entry.get()
@@ -859,6 +860,7 @@ class Home:
         if ask is True:
             Home.message = None
             Home.message_selected = None
+            self.currentusr_id= None
             self.currentusr_email= None
             self.currentusr_name= None
             win = Toplevel()
