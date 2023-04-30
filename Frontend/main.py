@@ -445,6 +445,7 @@ class Home:
             request = {
                 'type': 'starring_message',
                 'label': 'star_inbox',
+                'byuserid':  self.currentusr_id,
                 'messageid': inbtostar[0]
             }
             self.socket_connection.send(request)
@@ -464,6 +465,7 @@ class Home:
             request = {
                 'type': 'starring_message',
                 'label': 'unstar_inbox',
+                'byuserid':  self.currentusr_id,
                 'messageid': inbtounstar[0]
             }
             self.socket_connection.send(request)
@@ -651,6 +653,7 @@ class Home:
             request = {
                 'type': 'starring_message',
                 'label': 'star_sent',
+                'byuserid':  self.currentusr_id,
                 'messageid': snttostar[0]
             }
             self.socket_connection.send(request)
@@ -670,6 +673,7 @@ class Home:
             request = {
                 'type': 'starring_message',
                 'label': 'unstar_sent',
+                'byuserid':  self.currentusr_id,
                 'messageid': snttounstar[0]
             }
             self.socket_connection.send(request)
@@ -708,7 +712,6 @@ class Home:
 
     def click_frwdsnt(self):
         self.click_compose('sntforward')
-
 
     ######################################################################
     #####################   S T A R R E D   ##############################

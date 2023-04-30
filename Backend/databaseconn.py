@@ -25,7 +25,7 @@ class DatabaseConnection:
                                 gender VARCHAR(10),
                                 bday VARCHAR(15),
                                 createdon VARCHAR(15),
-                                isDeleted  BOOLEAN DEFAULT false,
+                                isdeleted  BOOLEAN DEFAULT false,
                                 picture TEXT,
                                 password TEXT NOT NULL
                             )"""
@@ -44,7 +44,9 @@ class DatabaseConnection:
                             )"""
 
         self.createstar_table = """CREATE TABLE IF NOT EXISTS starred (
+                                id SERIAL PRIMARY KEY,
                                 starredby INTEGER REFERENCES users(id),
+                                label VARCHAR(20),
                                 messageid INTEGER REFERENCES messages(id)
                             )"""
 
@@ -84,10 +86,17 @@ class DatabaseConnection:
         self.connection.commit()
         return data
 
+    # def update(self, query, values):
+    #     """updates the values from frontend"""
+    #     self.cursor.execute(query, values)
+    #     self.connection.commit()
+
     def update(self, query, values):
-        """updates the values from frontend"""
+        """Updates the values in the database"""
         self.cursor.execute(query, values)
+        rows_affected = self.cursor.rowcount
         self.connection.commit()
+        return rows_affected
 
     def delete(self, query, values):
         """ deletes the data from database"""

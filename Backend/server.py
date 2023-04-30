@@ -87,7 +87,7 @@ def handle_client(c, addr):
                 elif request['type'] == "login":
                     hashed_password = hashlib.sha256(request['password'].encode()).hexdigest()
                     try:
-                        query = "SELECT id, name, email, password FROM users WHERE email = %s AND isDeleted= false"
+                        query = "SELECT id, name, email, password FROM users WHERE email = %s AND isdeleted= false"
                         result = dbs_connection.search(query, (request['email'],))
                         if not result:
                             response = {
@@ -248,7 +248,11 @@ def handle_client(c, addr):
                         try:
                             query = "UPDATE messages SET isstarbyrecv=true WHERE id=%s"
                             values = (request['messageid'],)
-                            dbs_connection.update(query,values)
+                            action = dbs_connection.update(query,values)
+                            if action > 0:
+                                query = "INSERT INTO starred(starredby, label, messageid) VALUES(%s, %s, %s)"
+                                values= (request['byuserid'], 'Inbox', request['messageid'])
+                                dbs_connection.insert(query,values)
                             response = {
                                 'type': 'message_starred_on_inbox'
                             }
@@ -264,7 +268,11 @@ def handle_client(c, addr):
                         try:
                             query = "UPDATE messages SET isstarbyrecv=false WHERE id=%s"
                             values = (request['messageid'],)
-                            dbs_connection.update(query,values)
+                            action = dbs_connection.update(query,values)
+                            if action > 0:
+                                query = "DELETE FROM starred WHERE starredby=%s AND label=%s AND messageid=%s"
+                                values = (request['byuserid'], 'Inbox', request['messageid'])
+                                dbs_connection.delete(query,values)
                             response = {
                                 'type': 'message_unstarred_on_inbox'
                             }
@@ -280,7 +288,11 @@ def handle_client(c, addr):
                         try:
                             query = "UPDATE messages SET isstarbysndr=true WHERE id=%s"
                             values = (request['messageid'],)
-                            dbs_connection.update(query,values)
+                            action= dbs_connection.update(query,values)
+                            if action > 0:
+                                query = "INSERT INTO starred(starredby, label, messageid) VALUES(%s, %s, %s)"
+                                values= (request['byuserid'], 'Sent', request['messageid'])
+                                dbs_connection.insert(query,values)
                             response = {
                                 'type': 'message_starred_on_sent'
                             }
@@ -296,7 +308,11 @@ def handle_client(c, addr):
                         try:
                             query = "UPDATE messages SET isstarbysndr=false WHERE id=%s"
                             values = (request['messageid'],)
-                            dbs_connection.update(query,values)
+                            action = dbs_connection.update(query,values)
+                            if action > 0:
+                                query = "DELETE FROM starred WHERE starredby=%s AND label=%s AND messageid=%s"
+                                values = (request['byuserid'], 'Sent', request['messageid'])
+                                dbs_connection.delete(query,values)
                             response = {
                                 'type': 'message_unstarred_on_sent'
                             }
