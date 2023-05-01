@@ -243,6 +243,34 @@ def handle_client(c, addr):
                     finally:
                         send(c, response)
 
+                elif request['type'] == "request_starredbox_message":
+                    try:
+                        query = """SELECT m.id AS msgid, m.time AS time, usen.name AS sendername, usen.email AS senderid,
+                                    urec.name AS receivername, urec.email AS receiverid, s.label AS label, m.subject AS subject,
+                                    m.message AS message
+                                FROM starred s
+                                    JOIN messages m ON s.messageid = m.id
+                                    JOIN users usen ON m.sender = usen.id
+                                    JOIN users urec ON m.receiver = urec.id
+                                WHERE starredby=%s ORDER BY s.id DESC"""
+                        result = dbs_connection.search(query, (request['byid'],))
+                        if not result:
+                            response = {
+                                'type': 'empty_starredbox'
+                            }
+                        else:
+                            response = {
+                                'type':  'starredbox_found',
+                                'starredbox': result
+                            }
+                    except BaseException as msg:
+                            response= {
+                                'type': 'error'
+                            }
+                            print(msg)
+                    finally:
+                        send(c, response)
+
                 elif request['type'] == 'starring_message':
                     if request['label'] == 'star_inbox':
                         try:

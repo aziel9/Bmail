@@ -728,17 +728,190 @@ class Home:
                             (file="images\\list.png")
         self.starredlist_label = Label(self.current_frame, image=self.starredlist_frame_img, bg="#ECEBFF")
         self.starredlist_label.place(x=0, y=0)
+        self.starredbox_listbox = Listbox(self.starredlist_label,background='white',height=25, cursor='hand2',selectborderwidth=1,selectbackground='grey', selectforeground='white', activestyle='none', highlightthickness=0, relief=FLAT,font=("Inter", 13))
+        self.starredbox_listbox.place(x=30,y=90, width=455)
+        self.scrollbar_starredboxlist = Scrollbar(self.starredlist_label, orient='vertical', cursor="hand2", width=15)
+        self.starredbox_listbox.configure(yscrollcommand=self.scrollbar_starredboxlist.set)
+        self.scrollbar_starredboxlist.configure(command=self.starredbox_listbox.yview)
+        self.scrollbar_starredboxlist.place(x=490, y=90, height =700)
+
         self.starstarred_img = ImageTk.PhotoImage \
                             (file="images\\star.png")
         self.starstarred_frame_label = Label(self.starredlist_label, image=self.starstarred_img, bg="white")
         self.starstarred_frame_label.place(x=84,y=27)
         self.starred_heading = Label(self.starredlist_label, text="Starred", font=("Inter", 14, "bold"), bg="white", fg='#000000')
         self.starred_heading.place(x=128, y=27)
+        self.refreshstarred_img = ImageTk.PhotoImage \
+            (file="images\\refresh.png")
+        self.refreshstarred_button = Button(self.starredlist_label, image=self.refreshstarred_img, relief=FLAT, activebackground="white"
+                                   , borderwidth=0, background="white", cursor="hand2", command=self.update_starredbox)
+        self.refreshstarred_button.place(x=400, y=30)
 
         self.starredbx_frame_img = ImageTk.PhotoImage \
                             (file="images\\box.png")
         self.starredbx_label = Label(self.current_frame, image=self.starredbx_frame_img, bg="#ECEBFF")
         self.starredbx_label.place(x=527, y=0)
+
+        self.current_bodybox = Frame(self.starredbx_label, bg='white')
+        self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+        self.starredbox_listbox.bind("<<ListboxSelect>>", self.show_starredbox)
+        self.update_starredbox()
+
+    def get_starredbox(self):
+        try:
+            request = {
+                'type': 'request_starredbox_message',
+                'byid': self.currentusr_id
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            return response
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+            print(msg)
+
+    def update_starredbox(self):
+        response = self.get_starredbox()
+        if response['type'] == "empty_starredbox":
+            messagebox.showinfo("Empty","No email is marked as important")
+        elif response['type'] == "starredbox_found":
+            Home.message = response['starredbox']
+            messages = response['starredbox']
+            self.starredbox_listbox.delete(0, END)
+            for message in messages:
+                if message[6] == "Inbox":
+                    self.starredbox_listbox.insert(END, f"--> {message[2]}   ( {message[7]} )")
+                elif message[6] == "Sent":
+                    self.starredbox_listbox.insert(END, f"--> {message[4]}   ( {message[7]} )")
+        elif response['type'] == "error":
+            messagebox.showerror("Error","Error")
+
+    def show_starredbox(self, event):
+        selection=event.widget.curselection()
+        if selection:
+            index = selection[0]
+            messages = Home.message 
+            message = messages[index]
+            Home.message_selected = message
+
+            if self.current_bodybox is not None:
+                self.current_bodybox.destroy()
+
+            self.current_bodybox = Frame(self.starredbx_label, bg='white')
+            self.current_bodybox.place(x=20,y=8,width=905,height=810)
+
+            self.ystarstarredbox_img = ImageTk.PhotoImage \
+                (file="images\\ystar.png")
+            self.starstarredbox_button = Button(self.current_bodybox, image=self.ystarstarredbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_unstarstarred)
+            self.starstarredbox_button.place(x=695, y=15)
+
+            self.subject_strlabel = Label(self.current_bodybox, text="", font=("Inter", 14, "bold"), bg="white", fg='#000000')
+            self.subject_strlabel.place(x=55,y=50)
+            self.time_strlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "italic"), bg="white", fg='#000000')
+            self.time_strlabel.place(x=600,y=100)
+            self.starredbody_text = Text(self.current_bodybox, state='normal', highlightthickness=0 ,wrap="word",padx=11,pady=11,relief=FLAT, bg="white", fg="black",font=("Inter", 12))
+            self.starredbody_text.place(x=55,y=220,width=835, height=545)
+            self.scrollbar_starredbox = Scrollbar(self.current_bodybox, orient='vertical', cursor="hand2", width=15)
+            self.starredbody_text.configure(yscrollcommand=self.scrollbar_starredbox.set)
+            self.scrollbar_starredbox.configure(command=self.starredbody_text.yview)
+            self.scrollbar_starredbox.place(x=880, y=226, height =535)
+            
+            self.subject_strlabel.configure(text=f"[{message[6]}] {message[7]}")
+            self.time_strlabel.configure(text=f"{message[1]}")
+
+            if message[6] == "Inbox":
+                self.from_strlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+                self.from_strlabel.place(x=55,y=100)
+                self.fromemail_strlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+                self.fromemail_strlabel.place(x= 90, y=130)
+                self.to_strlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+                self.to_strlabel.place(x=55,y=167)
+                self.toemail_strlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+                self.toemail_strlabel.place(x= 130, y=170)
+                self.from_strlabel.configure(text=f"By: {message[2]}")
+                self.fromemail_strlabel.configure(text=f"< {message[3]} >")
+                self.to_strlabel.configure(text=f"To: me, ")
+                self.toemail_strlabel.configure(text=f"< {message[5]} >")
+
+            elif message[6] == "Sent":
+                self.to_strlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+                self.to_strlabel.place(x=55,y=100)
+                self.toemail_strlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+                self.toemail_strlabel.place(x= 90, y=130)
+                self.from_strlabel = Label(self.current_bodybox, text="", font=("Inter", 12, "normal"), bg="white", fg='#000000')
+                self.from_strlabel.place(x=55,y=167)
+                self.fromemail_strlabel = Label(self.current_bodybox, text="", font=("Inter", 11, "normal"), bg="white", fg='#5356FB')
+                self.fromemail_strlabel.place(x= 130, y=170)
+                self.to_strlabel.configure(text=f"To: {message[4]}")
+                self.toemail_strlabel.configure(text=f"< {message[5]} >")
+                self.from_strlabel.configure(text=f"By: me, ")
+                self.fromemail_strlabel.configure(text=f"< {message[3]} >")
+            
+            self.starredbody_text.insert(END, f"{message[8]}")
+            self.starredbody_text.configure(state='disabled')
+
+            self.replystarredbox_img = ImageTk.PhotoImage \
+                (file="images\\reply.png")
+            self.replystarredbox_button = Button(self.current_bodybox, image=self.replystarredbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_replysnt)
+            self.replystarredbox_button.place(x=70, y=770)
+
+            self.forwardstarredbox_img = ImageTk.PhotoImage \
+                (file="images\\forward.png")
+            self.forwardstarredbox_button = Button(self.current_bodybox, image=self.forwardstarredbox_img, relief=FLAT, activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_frwdsnt)
+            self.forwardstarredbox_button.place(x=180, y=770)
+
+
+    def click_unstarstarred(self):
+        ask = messagebox.askyesnocancel("Unmark?","Mark as unimportant?")
+        if ask is True:
+            if Home.message_selected[6] == "Inbox":
+                try:
+                    inbtounstar = Home.message_selected
+                    request = {
+                        'type': 'starring_message',
+                        'label': 'unstar_inbox',
+                        'byuserid':  self.currentusr_id,
+                        'messageid': inbtounstar[0]
+                    }
+                    self.socket_connection.send(request)
+                    response = self.socket_connection.receive()
+                    if response['type'] == "message_unstarred_on_inbox":
+                        self.click_starred()
+                    elif response['type'] == "error":
+                        messagebox.showerror("Failed","Fail to mark as unstarred")
+                except ConnectionRefusedError as msg:
+                    messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+                    print(msg)
+
+            elif Home.message_selected[6] == "Sent":
+                try:
+                    snttounstar = Home.message_selected
+                    request = {
+                        'type': 'starring_message',
+                        'label': 'unstar_sent',
+                        'byuserid':  self.currentusr_id,
+                        'messageid': snttounstar[0]
+                    }
+                    self.socket_connection.send(request)
+                    response = self.socket_connection.receive()
+                    if response['type'] == "message_unstarred_on_sent":
+                        self.click_starred()
+                    elif response['type'] == "error":
+                        messagebox.showerror("Failed","Fail to mark as unstarred")
+                except ConnectionRefusedError as msg:
+                    messagebox.showerror("Connection Failure","Failed to establish connection with server.")
+                    print(msg)
+
+
+    def click_replystr(self):
+        self.click_compose('sntreply')
+
+    def click_frwdstr(self):
+        self.click_compose('sntforward')
 
 
     ######################################################################
