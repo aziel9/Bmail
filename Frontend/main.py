@@ -855,13 +855,13 @@ class Home:
             self.replystarredbox_img = ImageTk.PhotoImage \
                 (file="images\\reply.png")
             self.replystarredbox_button = Button(self.current_bodybox, image=self.replystarredbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_replysnt)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_replystr)
             self.replystarredbox_button.place(x=70, y=770)
 
             self.forwardstarredbox_img = ImageTk.PhotoImage \
                 (file="images\\forward.png")
             self.forwardstarredbox_button = Button(self.current_bodybox, image=self.forwardstarredbox_img, relief=FLAT, activebackground="white"
-                                    , borderwidth=0, background="white", cursor="hand2")#, command=self.click_frwdsnt)
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdstr)
             self.forwardstarredbox_button.place(x=180, y=770)
 
 
@@ -908,10 +908,16 @@ class Home:
 
 
     def click_replystr(self):
-        self.click_compose('sntreply')
+        if Home.message_selected[6] == "Inbox":
+            self.click_compose('inbreply')
+        elif Home.message_selected[6] == "Sent":
+            self.click_compose('sntreply')
 
     def click_frwdstr(self):
-        self.click_compose('sntforward')
+        if Home.message_selected[6] == "Inbox":
+            self.click_compose('inbforward')
+        elif Home.message_selected[6] == "Sent":
+            self.click_compose('sntforward')
 
 
     ######################################################################

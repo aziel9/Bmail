@@ -272,7 +272,6 @@ class ForgotPassword:
         if ask is True:
             quit()
 
-
 class ChangePassword:
     def __init__(self,window,socket_connection, email, phone):
         self.window = window
