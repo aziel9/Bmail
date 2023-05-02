@@ -1,10 +1,11 @@
 from tkinter import *
-from PIL import ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageOps
 from tkinter import messagebox
 from tkinter import filedialog
 from datetime import *
 import os
 import base64
+from io import BytesIO
 
 class Home:
     message = None
@@ -936,6 +937,10 @@ class Home:
         self.current_frame = Label(self.window, image=self.myprofile_frame_img, bg="#ECEBFF")
         self.current_frame.place(x=532, y=106)
 
+        # self.mypicdisplay_img = ImageTk.PhotoImage \
+        #                     (file="images\\displaypic.png")
+        self.mypicdisplay_label = Label(self.current_frame, bg='white')
+        self.mypicdisplay_label.place(x=40, y=30)
         self.myname_heading = Label(self.current_frame, font=("Inter", 16, "bold"), bg="white", fg='#000000')
         self.myname_heading.place(x=281, y=67)
         self.bmail_heading = Label(self.current_frame, font=("Inter", 12), bg="white", fg='#000000')
@@ -1006,7 +1011,21 @@ class Home:
                 self.myprofdate_heading.configure(text=f"Account created on {response['accountdate']}")
                 pfile_byte = response['file_byte']
                 self.pimage_bytes = base64.b64decode(pfile_byte)
-                
+
+            self.mypicdisplay_img = Image.open("images\\displaypic.png")
+            pimage = Image.open(BytesIO(self.pimage_bytes))
+            pimage = pimage.resize((200, 200), resample=Image.LANCZOS)
+
+            mask = Image.new("L", (200,200), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, 200, 200), fill=255)
+            pimage.putalpha(mask)
+
+            rounded_img = ImageOps.fit(pimage, (185, 185), method=Image.LANCZOS)
+            self.mypicdisplay_img.paste(rounded_img, (7, 7), rounded_img)
+            self.mypicture = ImageTk.PhotoImage(self.mypicdisplay_img)
+            self.mypicdisplay_label.configure(image=self.mypicture)
+           
         except BaseException as msg:
             print(msg)
 
@@ -1029,7 +1048,6 @@ class Home:
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
             if response['type'] == "image_changed":
-                messagebox.showinfo("Chnaged","Picture Changed")
                 self.click_myprofile()
             elif response['type'] == "error":
                 messagebox.showerror("Error","Error uploading picture, Try again later...")

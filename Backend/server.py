@@ -435,7 +435,6 @@ def handle_client(c, addr):
                     finally:
                         send(c, response)                    
                         
-
                 elif request['type'] == "delete_account":
                     hashed_password = hashlib.sha256(request['password'].encode()).hexdigest()
                     try:
