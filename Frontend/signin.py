@@ -108,6 +108,8 @@ class Signin:
         except ConnectionRefusedError as msg:
             messagebox.showerror("Connection Failure","Failed to establish connection with server.")
             print(msg)
+        except BaseException as msg:
+            print(msg)
     
     def click_forgot(self):
         win= Toplevel()

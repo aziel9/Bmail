@@ -1,7 +1,10 @@
 from tkinter import *
 from PIL import ImageTk
 from tkinter import messagebox
+from tkinter import filedialog
 from datetime import *
+import os
+import base64
 
 class Home:
     message = None
@@ -940,7 +943,7 @@ class Home:
         self.changepic_img = ImageTk.PhotoImage \
             (file="images\\changepic.png")
         self.changepic_button = Button(self.current_frame, image=self.changepic_img, relief=FLAT, activebackground="white"
-                                   , borderwidth=0, background="white", cursor="hand2")#, command=self.click_send)
+                                   , borderwidth=0, background="white", cursor="hand2", command=self.click_changepic)
         self.changepic_button.place(x=281, y=176)
 
         self.myprofmob_img = ImageTk.PhotoImage \
@@ -1000,8 +1003,38 @@ class Home:
                 self.myprofdob_heading.configure(text=f"{response['bday']}")
                 self.myprofgender_heading.configure(text=f"{response['gender']}")
                 self.myprofcountry_heading.configure(text=f"Nepal")
-                self.myprofdate_heading.configure(text=f"Account created on {response['accountdate']}") 
+                self.myprofdate_heading.configure(text=f"Account created on {response['accountdate']}")
+                pfile_byte = response['file_byte']
+                self.pimage_bytes = base64.b64decode(pfile_byte)
+                
         except BaseException as msg:
+            print(msg)
+
+    def click_changepic(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+        if not file_path:
+            return
+        filename, file_extension = os.path.splitext(os.path.basename(file_path))
+        with open(file_path, 'rb') as f:
+            img_bytes = f.read()
+        image_bytes = base64.b64encode(img_bytes).decode('utf-8')
+        try:
+            request = {
+                'type': 'change_picture',
+                'byuserid': self.currentusr_id,
+                'byusremail': self.currentusr_email,
+                'file_type': file_extension,
+                'file_byte': image_bytes
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "image_changed":
+                messagebox.showinfo("Chnaged","Picture Changed")
+                self.click_myprofile()
+            elif response['type'] == "error":
+                messagebox.showerror("Error","Error uploading picture, Try again later...")
+        except ConnectionRefusedError as msg:
+            messagebox.showerror("Server issue","Server is disconnected")
             print(msg)
 
     def click_deleteaccount(self):

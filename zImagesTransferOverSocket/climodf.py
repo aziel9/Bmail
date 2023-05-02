@@ -15,7 +15,7 @@ def upload_image():
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # client_socket.connect(('localhost', 1234))
-    client_socket.connect(('100.108.66.28',1234))
+    client_socket.connect(('100.83.45.111',1234))
 
     with open(file_path, 'rb') as f:
         image_bytes = f.read()

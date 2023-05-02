@@ -1,0 +1,24 @@
+from PIL import Image, ImageTk
+import tkinter as tk
+
+# open image file
+img = Image.open("image.jpg")
+
+# resize image
+img = img.resize((400, 400), Image.ANTIALIAS)
+
+# create Tkinter window
+root = tk.Tk()
+
+# create label widget
+label = tk.Label(root)
+
+# convert image to Tkinter PhotoImage format
+photo = ImageTk.PhotoImage(img)
+
+# set the image on the label
+label.config(image=photo)
+label.pack()
+
+# run the Tkinter event loop
+root.mainloop()
