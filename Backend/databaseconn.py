@@ -25,7 +25,7 @@ class DatabaseConnection:
                                 bday VARCHAR(15),
                                 createdon VARCHAR(15),
                                 isdeleted  BOOLEAN DEFAULT false,
-                                picture TEXT,
+                                picture TEXT DEFAULT 'userimages\default.jpg' ,
                                 password TEXT NOT NULL
                             )"""
 
