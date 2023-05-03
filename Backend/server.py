@@ -418,7 +418,8 @@ def handle_client(c, addr):
                     import base64
                     image_bytes = base64.b64decode(request['file_byte'])
                     try:
-                        filename = f"userimages\\{request['byusremail']}{request['file_type']}"
+                        # filename = f"userimages\\{request['byusremail']}{request['file_type']}"
+                        filename = f"userimages\\{request['byusremail']}.jpg"
                         with open(filename, 'wb') as f:
                             f.write(image_bytes)
                         print("done")

@@ -1036,7 +1036,16 @@ class Home:
         filename, file_extension = os.path.splitext(os.path.basename(file_path))
         with open(file_path, 'rb') as f:
             img_bytes = f.read()
+        resize_image = Image.open(BytesIO(img_bytes))
+        rimage = resize_image.resize((200, 200), resample=Image.LANCZOS)
+        img_bytes = BytesIO()
+        try:
+            rimage.save(img_bytes, format='JPEG')
+        except:
+            rimage.save(img_bytes, format='PNG')
+        img_bytes = img_bytes.getvalue()
         image_bytes = base64.b64encode(img_bytes).decode('utf-8')
+
         try:
             request = {
                 'type': 'change_picture',
