@@ -1014,15 +1014,15 @@ class Home:
 
             self.mypicdisplay_img = Image.open("images\\displaypic.png")
             pimage = Image.open(BytesIO(self.pimage_bytes))
-            pimage = pimage.resize((200, 200), resample=Image.LANCZOS)
+            # pimage = pimage.resize((200, 200), resample=Image.LANCZOS)
 
-            mask = Image.new("L", (200,200), 0)
-            draw = ImageDraw.Draw(mask)
-            draw.ellipse((0, 0, 200, 200), fill=255)
-            pimage.putalpha(mask)
+            # mask = Image.new("L", (200,200), 0)
+            # draw = ImageDraw.Draw(mask)
+            # draw.ellipse((0, 0, 200, 200), fill=255)
+            # pimage.putalpha(mask)
 
-            rounded_img = ImageOps.fit(pimage, (185, 185), method=Image.LANCZOS)
-            self.mypicdisplay_img.paste(rounded_img, (7, 7), rounded_img)
+            # rounded_img = ImageOps.fit(pimage, (185, 185), method=Image.LANCZOS)
+            self.mypicdisplay_img.paste(pimage, (7, 7), pimage)
             self.mypicture = ImageTk.PhotoImage(self.mypicdisplay_img)
             self.mypicdisplay_label.configure(image=self.mypicture)
            
@@ -1030,6 +1030,22 @@ class Home:
             print(msg)
 
     def click_changepic(self):
+        # file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
+        # if not file_path:
+        #     return
+        # filename, file_extension = os.path.splitext(os.path.basename(file_path))
+        # with open(file_path, 'rb') as f:
+        #     img_bytes = f.read()
+        # resize_image = Image.open(BytesIO(img_bytes))
+        # rimage = resize_image.resize((200, 200), resample=Image.LANCZOS)
+        # img_bytes = BytesIO()
+        # try:
+        #     rimage.save(img_bytes, format='JPEG')
+        # except:
+        #     rimage.save(img_bytes, format='PNG')
+        # img_bytes = img_bytes.getvalue()
+        # image_bytes = base64.b64encode(img_bytes).decode('utf-8')
+
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
         if not file_path:
             return
@@ -1038,11 +1054,16 @@ class Home:
             img_bytes = f.read()
         resize_image = Image.open(BytesIO(img_bytes))
         rimage = resize_image.resize((200, 200), resample=Image.LANCZOS)
+        mask = Image.new("L", (200,200), 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0, 200, 200), fill=255)
+        rimage.putalpha(mask)
+        roundimage = ImageOps.fit(rimage, (185, 185), method=Image.LANCZOS)
         img_bytes = BytesIO()
         try:
-            rimage.save(img_bytes, format='JPEG')
+            roundimage.save(img_bytes, format='JPEG')
         except:
-            rimage.save(img_bytes, format='PNG')
+            roundimage.save(img_bytes, format='PNG')
         img_bytes = img_bytes.getvalue()
         image_bytes = base64.b64encode(img_bytes).decode('utf-8')
 
