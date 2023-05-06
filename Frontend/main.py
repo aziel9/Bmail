@@ -3,7 +3,6 @@ from PIL import Image, ImageTk, ImageDraw, ImageOps
 from tkinter import messagebox
 from tkinter import filedialog
 from datetime import *
-import os
 import base64
 from io import BytesIO
 
@@ -107,11 +106,10 @@ class Home:
         self.logout_button = Button(self.window, image=self.logout_img, relief=FLAT, activebackground="white"
                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_logout)
         self.logout_button.place(x=94, y=716)
-        
-        self.currentuser_img= ImageTk.PhotoImage \
-            (file="images\\user.png")
-        self.currentuser = Label(self.window, image=self.currentuser_img, relief=FLAT, background="#ECEBFF", borderwidth=0)
-        self.currentuser.place(x=1615, y=19)
+
+        self.usericon_button = Button(self.window,relief=FLAT, activebackground="#ECEBFF"
+                                , borderwidth=0, background="#ECEBFF", cursor="hand2", command=self.click_usericon)
+        self.usericon_button.place(x=1615,y=19)
 
         self.currentuser_heading = Label(self.window, font=("Inter", 11, "bold"), bg="#ECEBFF", fg='black')
         self.currentuser_heading.place(x=1675, y=30)
@@ -140,8 +138,30 @@ class Home:
         def on_leave(button, normal_img):
             button.configure(image=normal_img)
 
+        self.getuser_icon()
         self.current_frame = None
         self.current_bodybox = None
+
+    def getuser_icon(self):
+        try:
+            request = {
+                'type': 'view_profile',
+                'label': 'user_icon',
+                'byuserid': self.currentusr_id
+            }
+            self.socket_connection.send(request)
+            response = self.socket_connection.receive()
+            if response['type'] == "user_icon":
+                usericon_byte = response['file_byte']
+            usericon = base64.b64decode(usericon_byte)
+            self.currentuser_icon = Image.open(BytesIO(usericon))
+            self.currentusericon = ImageTk.PhotoImage(self.currentuser_icon)
+            self.usericon_button.configure(image=self.currentusericon)
+        except BaseException as msg:
+            print(msg)
+
+    def click_usericon(self):
+        self.click_myprofile()
 
     ######################################################################
     ########################   H O M E   #################################
@@ -937,8 +957,6 @@ class Home:
         self.current_frame = Label(self.window, image=self.myprofile_frame_img, bg="#ECEBFF")
         self.current_frame.place(x=532, y=106)
 
-        # self.mypicdisplay_img = ImageTk.PhotoImage \
-        #                     (file="images\\displaypic.png")
         self.mypicdisplay_label = Label(self.current_frame, bg='white')
         self.mypicdisplay_label.place(x=40, y=30)
         self.myname_heading = Label(self.current_frame, font=("Inter", 16, "bold"), bg="white", fg='#000000')
@@ -995,6 +1013,7 @@ class Home:
         try:
             request = {
                 'type': 'view_profile',
+                'label': 'myprofile',
                 'byid': self.currentusr_id
             }
             self.socket_connection.send(request)
@@ -1014,14 +1033,6 @@ class Home:
 
             self.mypicdisplay_img = Image.open("images\\displaypic.png")
             pimage = Image.open(BytesIO(self.pimage_bytes))
-            # pimage = pimage.resize((200, 200), resample=Image.LANCZOS)
-
-            # mask = Image.new("L", (200,200), 0)
-            # draw = ImageDraw.Draw(mask)
-            # draw.ellipse((0, 0, 200, 200), fill=255)
-            # pimage.putalpha(mask)
-
-            # rounded_img = ImageOps.fit(pimage, (185, 185), method=Image.LANCZOS)
             self.mypicdisplay_img.paste(pimage, (7, 7), pimage)
             self.mypicture = ImageTk.PhotoImage(self.mypicdisplay_img)
             self.mypicdisplay_label.configure(image=self.mypicture)
@@ -1030,26 +1041,9 @@ class Home:
             print(msg)
 
     def click_changepic(self):
-        # file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
-        # if not file_path:
-        #     return
-        # filename, file_extension = os.path.splitext(os.path.basename(file_path))
-        # with open(file_path, 'rb') as f:
-        #     img_bytes = f.read()
-        # resize_image = Image.open(BytesIO(img_bytes))
-        # rimage = resize_image.resize((200, 200), resample=Image.LANCZOS)
-        # img_bytes = BytesIO()
-        # try:
-        #     rimage.save(img_bytes, format='JPEG')
-        # except:
-        #     rimage.save(img_bytes, format='PNG')
-        # img_bytes = img_bytes.getvalue()
-        # image_bytes = base64.b64encode(img_bytes).decode('utf-8')
-
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
         if not file_path:
             return
-        filename, file_extension = os.path.splitext(os.path.basename(file_path))
         with open(file_path, 'rb') as f:
             img_bytes = f.read()
         resize_image = Image.open(BytesIO(img_bytes))
@@ -1072,12 +1066,12 @@ class Home:
                 'type': 'change_picture',
                 'byuserid': self.currentusr_id,
                 'byusremail': self.currentusr_email,
-                'file_type': file_extension,
                 'file_byte': image_bytes
             }
             self.socket_connection.send(request)
             response = self.socket_connection.receive()
             if response['type'] == "image_changed":
+                self.getuser_icon()
                 self.click_myprofile()
             elif response['type'] == "error":
                 messagebox.showerror("Error","Error uploading picture, Try again later...")
@@ -1309,11 +1303,3 @@ class DeleteAccount:
         ask = messagebox.askyesnocancel("Confirm exit", "Do you want to exit?")
         if ask is True:
             quit()
-
-# def win():
-#     window = Tk()
-#     Home(window)
-#     window.mainloop()
-
-# if __name__ == '__main__':
-#     win()

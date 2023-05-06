@@ -3,10 +3,10 @@ import databaseconn
 import hashlib
 import random
 from datetime import *
-import os
 import json
 import threading
-# import base64
+from io import BytesIO
+from PIL import Image
 
 HEADER = 1024
 PORT = 1234
@@ -388,41 +388,72 @@ def handle_client(c, addr):
                             send(c, response)
 
                 elif request['type'] == "view_profile":
-                    try:
-                        import base64
-                        query = "SELECT name, email, phone, bday, gender, createdon,picture FROM users WHERE id = %s AND isDeleted= false"
-                        result = dbs_connection.search(query, (request['byid'],))
-                        pname, pemail,pmob, pbday, pgen, pacc,pfile  = result[0]
-                        with open(pfile, 'rb') as f:
-                            img_bytes = f.read()
-                        image_bytes = base64.b64encode(img_bytes).decode('utf-8')
-                        response= {
-                            'type': 'my_profile',
-                            'name': pname,
-                            'email': pemail,
-                            'mobile': pmob,
-                            'bday': pbday,
-                            'gender': pgen,
-                            'accountdate': pacc,
-                            'file_byte': image_bytes
-                        }
-                    except BaseException as msg:
-                        response = {
-                            'type': 'error'
-                        }
-                        print(msg)
-                    finally:
-                        send(c, response)
+                    if request['label'] == "user_icon":
+                        try:
+                            import base64
+                            query = "SELECT email, picture FROM users WHERE id=%s"
+                            result = dbs_connection.search(query, (request['byuserid'],))
+                            uemail, iconfile =result[0]
+                            if iconfile == "userimages\\default.png":
+                                filename = "userimages\\icondefault.png"
+                                with open(filename, 'rb') as f:
+                                    icon_bytes = f.read()
+                            else:
+                                filename= iconfile.replace(f"{uemail}",f"icon{uemail}")
+                                with open(filename, 'rb') as f:
+                                    icon_bytes = f.read()
+                            icon_bytes = base64.b64encode(icon_bytes).decode('utf-8')
+                            response = {
+                                'type': 'user_icon',
+                                'file_byte': icon_bytes
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
+
+                    elif request['label'] == "myprofile":
+                        try:
+                            import base64
+                            query = "SELECT name, email, phone, bday, gender, createdon,picture FROM users WHERE id = %s AND isDeleted= false"
+                            result = dbs_connection.search(query, (request['byid'],))
+                            pname, pemail,pmob, pbday, pgen, pacc,pfile  = result[0]
+                            with open(pfile, 'rb') as f:
+                                img_bytes = f.read()
+                            image_bytes = base64.b64encode(img_bytes).decode('utf-8')
+                            response= {
+                                'type': 'my_profile',
+                                'name': pname,
+                                'email': pemail,
+                                'mobile': pmob,
+                                'bday': pbday,
+                                'gender': pgen,
+                                'accountdate': pacc,
+                                'file_byte': image_bytes
+                            }
+                        except BaseException as msg:
+                            response = {
+                                'type': 'error'
+                            }
+                            print(msg)
+                        finally:
+                            send(c, response)
 
                 elif request['type'] == "change_picture":
                     import base64
                     image_bytes = base64.b64decode(request['file_byte'])
+                    resize_icon = Image.open(BytesIO(image_bytes))
+                    resize_image = resize_icon.resize((50, 50), resample=Image.LANCZOS)
                     try:
-                        # filename = f"userimages\\{request['byusremail']}{request['file_type']}"
-                        filename = f"userimages\\{request['byusremail']}.jpg"
+                        filename = f"userimages\\{request['byusremail']}.png"
+                        iconname = f"userimages\\icon{request['byusremail']}.png"
                         with open(filename, 'wb') as f:
                             f.write(image_bytes)
-                        print("done")
+                        with open(iconname, 'wb') as f:
+                            resize_image.save(f)
                         query = "UPDATE users SET picture= %s WHERE id=%s"
                         values = (filename,request['byuserid'])
                         dbs_connection.update(query,values)
@@ -433,6 +464,7 @@ def handle_client(c, addr):
                         response = {
                             'type': 'error'
                         }
+                        print(msg)
                     finally:
                         send(c, response)                    
                         
