@@ -5,6 +5,8 @@ from tkinter import filedialog
 from datetime import *
 import base64
 from io import BytesIO
+import random
+from diffiehellman import DiffieHellman
 
 class Home:
     message = None
@@ -19,6 +21,7 @@ class Home:
         self.currentusr_email = email
         self.currentusr_name = name
         self.socket_connection = socket_connection
+        self.keylist = [b"a@1234ed", b"$5frcddd", b"$cnj2nfc", b"@1k4cvqu", b"2@9nb$rq", b"10@b8bn1"]
 
         ########## ON PRESSING X BUTTON TO CLOSE #############
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -231,28 +234,44 @@ class Home:
 
         if type == 'inbreply':
             msgtoreply = Home.message_selected
+            subject_hex = msgtoreply[7]
+            body_hex =  msgtoreply[8]
+            key = msgtoreply[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
             self.toemail_entry.insert(0,msgtoreply[3])
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0,f"[Re] "+msgtoreply[7])
+            self.subject_entry.insert(0,f"[Re] "+subject)
 
         elif type == 'inbforward':
             msgtoforward = Home.message_selected
+            subject_hex = msgtoforward[7]
+            body_hex =  msgtoforward[8]
+            key = msgtoforward[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[7])
-            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {msgtoforward[7]}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{msgtoforward[8]}")
+            self.subject_entry.insert(0, f"[FWD]  "+subject)
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {subject}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{body}")
 
         elif type == 'sntreply':
             msgtoreply = Home.message_selected
+            subject_hex = msgtoreply[7]
+            body_hex =  msgtoreply[8]
+            key = msgtoreply[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
             self.toemail_entry.insert(0,msgtoreply[5])
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0,f"[Re] "+msgtoreply[7])
+            self.subject_entry.insert(0,f"[Re] "+subject)
             
-
         elif type == 'sntforward':
             msgtoforward = Home.message_selected
+            msgtoforward = Home.message_selected
+            subject_hex = msgtoforward[7]
+            body_hex =  msgtoforward[8]
+            key = msgtoforward[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
             self.subject_entry.delete(0, END)
-            self.subject_entry.insert(0, f"[FWD]  "+msgtoforward[7])
-            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {msgtoforward[7]}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{msgtoforward[8]}")
+            self.subject_entry.insert(0, f"[FWD]  "+subject)
+            self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {subject}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{body}")
 
     def on_message_paste(self, event):
         self.message_entry.update_idletasks()
@@ -274,7 +293,7 @@ class Home:
         self.subject_entry.insert(0, 'Subject:')
         self.message_entry.delete('1.0', END)
 
-    def click_send(self):
+    def check_compose(self):
         if not self.fromemail_entry.get():
             messagebox.showerror("Empty field","Empty sender address")
         elif not self.toemail_entry.get():
@@ -286,22 +305,40 @@ class Home:
         elif not self.message_entry.get("1.0", "end-1c"):
             messagebox.showerror("Empty field","Enter your message")
         else:
+            return True
+
+    def click_send(self):
+        if self.check_compose() is True:
             try:
                 request = {
-                    'type': 'check_receipent',
-                    'receipentid': self.toemail_entry.get() ,
+                    'type': 'key_exchange',
+                    'label': 'generate_key',
+                    'receipentid': self.toemail_entry.get()
                 }
                 self.socket_connection.send(request)
                 response = self.socket_connection.receive()
                 if response['type'] == "receipent_exists":
                     receiverid = response['receiverid']
+                    prime = response['prime']
+                    primitive = response['primitive']
+                    my_privatekey =  random.choice(range(100))
+                    receiver_publickey = response['receiver_publickey']
+                    my_publickey = pow(primitive,my_privatekey,prime)
+                    my_finalkey = pow(receiver_publickey,my_privatekey,prime)
+                    self.dh = DiffieHellman(self.keylist[my_finalkey%len(self.keylist)])
+                    self.cipher_subject= self.dh.encryption(self.subject_entry.get())
+                    self.cipher_message = self.dh.encryption(self.message_entry.get("1.0", "end-1c"))
+                    subject = self.cipher_subject.hex()
+                    message = self.cipher_message.hex()
                     try:
                         request = {
-                            'type': 'client_message',
+                            'type': 'key_exchange',
+                            'label': 'store_key_and_message',
+                            'sender_publickey': my_publickey,
                             'sender': self.currentusr_id,
                             'receiver': receiverid,
-                            'subject': self.subject_entry.get(),
-                            'body': self.message_entry.get("1.0", "end-1c")
+                            'subject': subject,
+                            'body': message
                         }
                         self.socket_connection.send(request)
                         response = self.socket_connection.receive()
@@ -312,8 +349,9 @@ class Home:
                             messagebox.showinfo("Message sent","Message sent successfully")
                         elif response['type'] == "message_sent_failed":
                             messagebox.showerror("Failed","Failed to send a message")
-                    except:
+                    except BaseException as msg:
                         messagebox.showerror("Error","Issue")
+                        print(msg)
 
                 elif response['type'] == "no_receipent":
                     messagebox.showerror("Invalid receipent","Receipent address doesnot exists")
@@ -391,7 +429,7 @@ class Home:
             messages = response['inbox']
             self.inbox_listbox.delete(0, END)
             for message in messages:
-                self.inbox_listbox.insert(END, f"--> {message[2]}   ( {message[7]} )")
+                self.inbox_listbox.insert(END, f"--> From: {message[2]}")
 
     def show_inbox(self, event):
         selection=event.widget.curselection()
@@ -442,13 +480,18 @@ class Home:
             self.scrollbar_inbox.configure(command=self.inboxbody_text.yview)
             self.scrollbar_inbox.place(x=880, y=226, height =535)
 
-            self.subject_inblabel.configure(text=f"{message[7]}")
+            subject_hex = message[7]
+            body_hex =  message[8]
+            key = message[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
+
+            self.subject_inblabel.configure(text=f"{subject}")
             self.time_inblabel.configure(text=f"{message[1]}")
             self.from_inblabel.configure(text=f"By: {message[2]}")
             self.fromemail_inblabel.configure(text=f"< {message[3]} >")
             self.to_inblabel.configure(text=f"To: me, ")
             self.toemail_inblabel.configure(text=f"< {message[5]} >")
-            self.inboxbody_text.insert(END, f"{message[8]}")
+            self.inboxbody_text.insert(END, f"{body}")
             self.inboxbody_text.configure(state='disabled')
 
             self.replyinbox_img = ImageTk.PhotoImage \
@@ -462,7 +505,7 @@ class Home:
             self.forwardinbox_button = Button(self.current_bodybox, image=self.forwardinbox_img, relief=FLAT, activebackground="white"
                                     , borderwidth=0, background="white", cursor="hand2", command=self.click_frwdinb)
             self.forwardinbox_button.place(x=180, y=770)
-
+    
     def click_starinbox(self):
         try:
             inbtostar = Home.message_selected
@@ -503,10 +546,12 @@ class Home:
             messagebox.showerror("Connection Failure","Failed to establish connection with server.")
             print(msg)
     
-    def click_delinbox(self):
+    def click_delinbox(self): 
         ask = messagebox.askyesnocancel("Delete?","This email will be deleted permanently")
         if ask is True:
             inbtodel = Home.message_selected
+            if inbtodel[6] == True:
+                self.click_unstarinbox()
             try:
                 request = {
                     'type': 'delete_message',
@@ -597,7 +642,7 @@ class Home:
             messages = response['sentbox']
             self.sentbox_listbox.delete(0, END)
             for message in messages:
-                self.sentbox_listbox.insert(END, f"--> {message[4]}   ( {message[7]} )")
+                self.sentbox_listbox.insert(END, f"--> To: {message[4]}")
         elif response['type'] == "error":
             messagebox.showerror("Error","Error")
 
@@ -649,14 +694,19 @@ class Home:
             self.sentbody_text.configure(yscrollcommand=self.scrollbar_sentbox.set)
             self.scrollbar_sentbox.configure(command=self.sentbody_text.yview)
             self.scrollbar_sentbox.place(x=880, y=226, height =535)
-            
-            self.subject_sntlabel.configure(text=f"{message[7]}")
+
+            subject_hex = message[7]
+            body_hex =  message[8]
+            key = message[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
+
+            self.subject_sntlabel.configure(text=f"{subject}")
             self.time_sntlabel.configure(text=f"{message[1]}")
             self.to_sntlabel.configure(text=f"To: {message[4]}")
             self.toemail_sntlabel.configure(text=f"< {message[5]} >")
             self.from_sntlabel.configure(text=f"By: me, ")
             self.fromemail_sntlabel.configure(text=f"< {message[3]} >")
-            self.sentbody_text.insert(END, f"{message[8]}")
+            self.sentbody_text.insert(END, f"{body}")
             self.sentbody_text.configure(state='disabled')
 
             self.replysentbox_img = ImageTk.PhotoImage \
@@ -715,6 +765,8 @@ class Home:
         ask = messagebox.askyesnocancel("Delete?","This email will be deleted permanently")
         if ask is True:
             snttodel = Home.message_selected
+            if snttodel[6] == True:
+                self.click_unstarsent()
             try:
                 request = {
                     'type': 'delete_message',
@@ -805,9 +857,9 @@ class Home:
             self.starredbox_listbox.delete(0, END)
             for message in messages:
                 if message[6] == "Inbox":
-                    self.starredbox_listbox.insert(END, f"--> {message[2]}   ( {message[7]} )")
+                    self.starredbox_listbox.insert(END, f"--> From: {message[2]}")
                 elif message[6] == "Sent":
-                    self.starredbox_listbox.insert(END, f"--> {message[4]}   ( {message[7]} )")
+                    self.starredbox_listbox.insert(END, f"--> To:   {message[4]}")
         elif response['type'] == "error":
             messagebox.showerror("Error","Error")
 
@@ -841,8 +893,13 @@ class Home:
             self.starredbody_text.configure(yscrollcommand=self.scrollbar_starredbox.set)
             self.scrollbar_starredbox.configure(command=self.starredbody_text.yview)
             self.scrollbar_starredbox.place(x=880, y=226, height =535)
+
+            subject_hex = message[7]
+            body_hex =  message[8]
+            key = message[9]
+            subject, body = self.decrypt(subject_hex,body_hex,key)
             
-            self.subject_strlabel.configure(text=f"[{message[6]}] {message[7]}")
+            self.subject_strlabel.configure(text=f"[{message[6]}] {subject}")
             self.time_strlabel.configure(text=f"{message[1]}")
 
             if message[6] == "Inbox":
@@ -873,7 +930,7 @@ class Home:
                 self.from_strlabel.configure(text=f"By: me, ")
                 self.fromemail_strlabel.configure(text=f"< {message[3]} >")
             
-            self.starredbody_text.insert(END, f"{message[8]}")
+            self.starredbody_text.insert(END, f"{body}")
             self.starredbody_text.configure(state='disabled')
 
             self.replystarredbox_img = ImageTk.PhotoImage \
@@ -1244,6 +1301,17 @@ class Home:
             Signin(win, self.socket_connection)
             self.window.withdraw()
             win.deiconify()
+
+    def decrypt(self,subject,body,key):
+        self.subject = subject
+        self.body = body
+        self.key = key
+        subject_byte = bytes.fromhex(subject)
+        body_byte = bytes.fromhex(body)
+        self.dh = DiffieHellman(self.keylist[self.key%len(self.keylist)])
+        dec_subject = self.dh.decryption(subject_byte).decode()
+        dec_body = self.dh.decryption(body_byte).decode()
+        return dec_subject, dec_body
 
     def on_closing(self):
         self.window.deiconify()

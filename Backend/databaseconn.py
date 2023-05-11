@@ -8,7 +8,7 @@ class DatabaseConnection:
 
     def d_connection(self):
         hostname = 'localhost'
-        db = 'bmail'
+        db = 'bmailtest'
         username = 'postgres'  
         pwd = 'apeed'
         port_id = 5432
@@ -17,40 +17,51 @@ class DatabaseConnection:
 
     def createtable(self):
         self.createusr_table = """CREATE TABLE IF NOT EXISTS users (
-                                id SERIAL PRIMARY KEY,
+                                user_id SERIAL PRIMARY KEY,
                                 name VARCHAR(100),
                                 email VARCHAR(100) UNIQUE,
+                                isdeleted  BOOLEAN DEFAULT false,
+                                password TEXT NOT NULL
+                            )"""
+        
+        self.createusr_infotable = """CREATE TABLE IF NOT EXISTS users_info (
+                                user_id INTEGER REFERENCES users(user_id),
                                 phone VARCHAR(20),
                                 gender VARCHAR(10),
                                 bday VARCHAR(15),
                                 createdon VARCHAR(15),
-                                isdeleted  BOOLEAN DEFAULT false,
-                                picture TEXT DEFAULT 'userimages\default.png' ,
-                                password TEXT NOT NULL
+                                picture TEXT DEFAULT 'userimages\default.png'
                             )"""
 
-        self.createmsg_table = """CREATE TABLE IF NOT EXISTS messages (
-                                id SERIAL PRIMARY KEY,
+        self.createemail_table = """CREATE TABLE IF NOT EXISTS emails (
+                                email_id SERIAL PRIMARY KEY,
                                 time VARCHAR(30),
-                                sender INTEGER REFERENCES users(id),
-                                receiver INTEGER REFERENCES users(id),
-                                isdelbyrecv BOOLEAN DEFAULT false,
-                                isdelbysndr BOOLEAN DEFAULT false,
-                                isstarbyrecv BOOLEAN DEFAULT false,
-                                isstarbysndr BOOLEAN DEFAULT false,
+                                sender INTEGER REFERENCES users(user_id),
+                                receiver INTEGER REFERENCES users(user_id),
+                                key INTEGER,
                                 subject TEXT,
                                 message TEXT
                             )"""
+        
+        self.createemail_statustable = """CREATE TABLE IF NOT EXISTS email_status (
+                                email_id INTEGER REFERENCES emails(email_id),
+                                isdelbyrecv BOOLEAN DEFAULT false,
+                                isdelbysndr BOOLEAN DEFAULT false,
+                                isstarbyrecv BOOLEAN DEFAULT false,
+                                isstarbysndr BOOLEAN DEFAULT false
+                            )"""
 
         self.createstar_table = """CREATE TABLE IF NOT EXISTS starred (
-                                id SERIAL PRIMARY KEY,
-                                starredby INTEGER REFERENCES users(id),
+                                starred_id SERIAL PRIMARY KEY,
+                                starredby INTEGER REFERENCES users(user_id),
                                 label VARCHAR(20),
-                                messageid INTEGER REFERENCES messages(id)
+                                email_id INTEGER REFERENCES emails(email_id)
                             )"""
 
         self.cursor.execute(self.createusr_table)
-        self.cursor.execute(self.createmsg_table)
+        self.cursor.execute(self.createusr_infotable)
+        self.cursor.execute(self.createemail_table)
+        self.cursor.execute(self.createemail_statustable)
         self.cursor.execute(self.createstar_table)
         self.connection.commit()
 
@@ -70,6 +81,13 @@ class DatabaseConnection:
         """ search the values from database"""
         self.cursor.execute(query, values)
         data = self.cursor.fetchall()
+        self.connection.commit()
+        return data
+
+    def insert_return(self, query, values):
+        """ insert values from frontend to database"""
+        self.cursor.execute(query, values)
+        data = self.cursor.fetchone()[0]
         self.connection.commit()
         return data
 
