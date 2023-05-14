@@ -10,6 +10,9 @@ from PIL import Image
 from randomnum import RandomPrime as rp
 from randomnum import primitive as pr
 import random
+import requests
+import geocoder
+from twilio.rest import Client
 
 HEADER = 1024
 PORT = 1234
@@ -27,10 +30,47 @@ def send(c, response):
     c.sendall(send_length)
     c.sendall(response_json)
 
+def get_weather():
+    g = geocoder.ip('me')
+    latitude = g.lat
+    longitude = g.lng
+
+    api_url = 'https://api.open-meteo.com/v1/forecast'
+    params = {
+        'latitude': latitude,
+        'longitude': longitude,
+        'current_weather': 'true',
+    }
+    response = requests.get(api_url, params=params)
+
+    if response.status_code == 200:
+        data = response.json()
+        current_temperature = data['current_weather']['temperature']
+        return current_temperature
+    else:
+        print('Error:', response.status_code)
+
+def send_sms(number):
+    # account_sid = 'Cff1bf5163825150e9ffc1ce4a21dae0'
+    # auth_token = 'e581185c5d6fd23521b836148d13aa'
+    # client = Client(account_sid, auth_token)
+
+    otp = str(random.randint(100000, 999999))
+    # num = number
+    # msg = f"Your OTP code for Bmail is {otp}"
+    # message = client.messages \
+    #                 .create(
+    #                     body=msg,
+    #                     from_='+15734754862',
+    #                     to=num
+    #                 )
+    return otp
+
 def handle_client(c, addr):
-    global P
+    global otp, P
     try:
         print(f"[NEW CONNECTION] {addr} connected.")
+        temp= get_weather()
         connected = True
         while connected:
                 msg_length_bytes = c.recv(4)
@@ -57,10 +97,9 @@ def handle_client(c, addr):
                             }
                         else:
                             #OTP TO BE SENT VIA TWILIO (CODE PENDING)
-                            otp = str(random.randint(100000, 999999))
+                            otp = send_sms(phone)
                             response = {
-                                'type': 'otp',
-                                'otp': otp
+                                'type': 'otp_sent',
                             }
                             print(f"OTP for {phone} and {email} is {otp}")
                     except BaseException as msg:
@@ -70,7 +109,6 @@ def handle_client(c, addr):
                         print(msg)
                     finally:
                         send(c, response)
-
 
                 elif request['type'] == "signup":
                     createdon = datetime.now().date()
@@ -91,6 +129,20 @@ def handle_client(c, addr):
                         response = {
                             'type': 'signup_fail'
                         }
+                    finally:
+                        send(c, response)
+
+                elif request['type'] == "validate_otp":
+                    try: 
+                        if request['otp'] == otp:
+                            response = {
+                                'type' : 'correct_otp'
+                            }
+                            otp = None
+                        else:
+                            response = {
+                                'type' : 'incorrect_otp'
+                            }
                     finally:
                         send(c, response)
 
@@ -129,19 +181,19 @@ def handle_client(c, addr):
                     try:
                         query = "SELECT u.email, ui.phone FROM users u JOIN users_info ui ON u.user_id = ui.user_id WHERE u.email=%s AND ui.phone=%s AND u.isdeleted=false;"
                         result = dbs_connection.search(query, (request['email'],request['phone']))
-                        print(result)
+                        email, phone = result[0]
+                        print(phone)
                         if not result:
                             response = {
                                 'type': 'no_account'
                             }
                         else:
-                            #OTP TO BE SENT VIA TWILIO (CODE PENDING)
-                            otp = str(random.randint(100000, 999999))
+                            otp = send_sms(phone)
                             response = {
-                                'type': 'valid_account',
-                                'otp': otp
+                                'type': 'valid_account'
+                                # 'otp': otp
                             }
-                            print(f"OTP for {request['phone']} and {request['email']} is {otp}")
+                            print(f"OTP for {email} and {phone} is {otp}")
                     except BaseException as msg:
                         response = {
                             'type': 'error'
@@ -163,6 +215,27 @@ def handle_client(c, addr):
                         response = {
                             'type': 'password_change_failed'
                         }
+                    finally:
+                        send(c, response)
+
+                elif request['type'] == "home_info":
+                    try:
+                        query = "SELECT (SELECT COUNT(*) FROM emails WHERE receiver = %s), (SELECT COUNT(*) FROM emails WHERE sender = %s) ,(SELECT name FROM users WHERE user_id = %s)"
+                        result = dbs_connection.search(query, (request['byid'],request['byid'], request['byid']))
+                        received, sent, name = result[0]
+                        fname = name.split()[0]
+                        response = {
+                            'type' : 'home_info',
+                            'name' : fname,
+                            'temperature' : int(temp),
+                            'received' : received,
+                            'sent' : sent
+                        }
+                    except BaseException as msg:
+                        response = {
+                            'type' : 'error'
+                        }
+                        print(msg)
                     finally:
                         send(c, response)
 

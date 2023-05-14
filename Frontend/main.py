@@ -141,9 +141,12 @@ class Home:
         def on_leave(button, normal_img):
             button.configure(image=normal_img)
 
-        self.getuser_icon()
         self.current_frame = None
         self.current_bodybox = None
+        self.current_button = None
+        self.getuser_icon()
+        # self.click_home()
+        self.click_compose()
 
     def getuser_icon(self):
         try:
@@ -171,6 +174,81 @@ class Home:
     ######################################################################
 
     def click_home(self):
+        if self.current_frame is not None:
+            self.current_frame.destroy()
+        self.window.title("Home")
+
+        self.home_frame_img = ImageTk.PhotoImage \
+                            (file="images\\homepage1.png")
+        self.current_frame = Label(self.window, image=self.home_frame_img, bg="#ECEBFF")
+        self.current_frame.place(x=532, y=106)
+
+        self.hello_heading1 = Label(self.current_frame, font=("Inter", 16, "bold"), bg="#F5F5F7", fg='#000000')
+        self.hello_heading1.place(x=129, y=128)
+        self.hello_heading2 = Label(self.current_frame, font=("Inter", 13, "normal"), bg="#F5F5F7", fg='#000000')
+        self.hello_heading2.place(x=129, y=183)
+
+        self.welcome_heading1 = Label(self.current_frame, font=("Inter", 14, "bold"), bg="#F5F5F7", fg='#000000')
+        self.welcome_heading1.place(x=129, y=321)
+        self.welcome_heading2 = Label(self.current_frame, font=("Inter", 14, "bold"), bg="#F5F5F7", fg='#000000')
+        self.welcome_heading2.place(x=129, y=370)
+
+        self.weather_heading1 = Label(self.current_frame, font=("Inter", 60, "bold"), bg="#F5F5F7", fg='#000000')
+        self.weather_heading1.place(x=903, y=261)
+        self.weather_heading2 = Label(self.current_frame, font=("Inter", 20, "bold"), bg="#F5F5F7", fg='blue')
+        self.weather_heading2.place(x=1020, y=278)
+
+        self.received_heading1 = Label(self.current_frame,font=("Inter", 60, "bold"), bg="#F5F5F7", fg='#000000')
+        # self.received_heading1.place(x=205, y=489)
+        self.received_heading1.place(x=235, y=489)
+        self.received_heading2 = Label(self.current_frame, font=("Inter", 16, "bold"), bg="#F5F5F7", fg='#000000')
+        self.received_heading2.place(x=221, y=612)
+        self.received_heading3 = Label(self.current_frame, font=("Inter", 16, "bold"), bg="#F5F5F7", fg='#000000')
+        self.received_heading3.place(x=210, y=665)
+
+        self.sent_heading1 = Label(self.current_frame, font=("Inter", 60, "bold"), bg="#F5F5F7", fg='#000000')
+        # self.sent_heading1.place(x=505, y=489)
+        self.sent_heading1.place(x=535, y=489)
+        self.sent_heading2 = Label(self.current_frame, font=("Inter", 16, "bold"), bg="#F5F5F7", fg='#000000')
+        self.sent_heading2.place(x=521, y=612)
+        self.sent_heading3 = Label(self.current_frame, font=("Inter", 16, "bold"), bg="#F5F5F7", fg='#000000')
+        self.sent_heading3.place(x=527, y=665)
+
+        self.support_heading1 = Label(self.current_frame, font=("Inter", 14, "bold"), bg="white", fg='#000000')
+        self.support_heading1.place(x=851, y=568)
+        self.support_heading2 = Button(self.current_frame,
+                                    font=("Inter", 12, "bold"), fg="blue", relief=FLAT,
+                                    activebackground="white"
+                                    , borderwidth=0, background="white", cursor="hand2", command=self.click_support)
+        self.support_heading2.place(x= 835, y= 600)
+
+        request = {
+            'type' : 'home_info',
+            'byid' : self.currentusr_id
+        }
+        self.socket_connection.send(request)
+        response = self.socket_connection.receive()
+        name = response['name']
+        temperature = response['temperature']
+        received = response['received']
+        sent = response['sent']
+
+        self.hello_heading1.configure(text=f"Hello {name}!")
+        self.hello_heading2.configure(text= f"It's good to see you!")
+        self.welcome_heading1.configure(text= f"Welcome to Bmail,")
+        self.welcome_heading2.configure(text=f"Secure, Easy and Simple")
+        self.weather_heading1.configure(text=f"{temperature}")
+        self.weather_heading2.configure(text="°C")
+        self.received_heading1.configure(text=f"{received}")
+        self.received_heading2.configure(text="Emails")
+        self.received_heading3.configure(text="Received")
+        self.sent_heading1.configure(text=f"{sent}")
+        self.sent_heading2.configure(text="Emails")
+        self.sent_heading3.configure(text="Sent")
+        self.support_heading1.configure(text="Need support?")
+        self.support_heading2.configure(text="bmail@support.com")
+
+    def click_support(self):
         pass
 
     ######################################################################
@@ -423,7 +501,10 @@ class Home:
     def update_inbox(self):
         response = self.get_inbox()
         if response['type'] == "empty_inbox":
-            messagebox.showinfo("Empty inbox","Your inbox is empty")
+            self.emptyinb_img = ImageTk.PhotoImage \
+                            (file="images\\empty.png")
+            self.emptyinb_frame_label = Label(self.current_bodybox, image=self.emptyinb_img, bg="white")
+            self.emptyinb_frame_label.place(x=370,y=250)
         elif response['type'] == "inbox_found":
             Home.message = response['inbox']
             messages = response['inbox']
@@ -636,7 +717,10 @@ class Home:
     def update_sentbox(self):
         response = self.get_sentbox()
         if response['type'] == "empty_sentbox":
-            messagebox.showinfo("Empty sentbox","Your sentbox is empty")
+            self.emptysnt_img = ImageTk.PhotoImage \
+                            (file="images\\empty.png")
+            self.emptysnt_frame_label = Label(self.current_bodybox, image=self.emptysnt_img, bg="white")
+            self.emptysnt_frame_label.place(x=370,y=250)
         elif response['type'] == "sentbox_found":
             Home.message = response['sentbox']
             messages = response['sentbox']
@@ -850,7 +934,10 @@ class Home:
     def update_starredbox(self):
         response = self.get_starredbox()
         if response['type'] == "empty_starredbox":
-            messagebox.showinfo("Empty","No email is marked as important")
+            self.emptystr_img = ImageTk.PhotoImage \
+                            (file="images\\empty.png")
+            self.emptystr_frame_label = Label(self.current_bodybox, image=self.emptystr_img, bg="white")
+            self.emptystr_frame_label.place(x=370,y=250)
         elif response['type'] == "starredbox_found":
             Home.message = response['starredbox']
             messages = response['starredbox']

@@ -141,7 +141,6 @@ class Signin:
 class ForgotPassword:
     email = None
     phone = None
-    otp = None
     def __init__(self,window,socket_connection):
         self.window = window
         self.window.geometry("1906x952+5+9")
@@ -223,10 +222,9 @@ class ForgotPassword:
                     elif response['type'] == "error":
                         messagebox.showerror("Server issue", "Server is disconnected")
                     elif response['type'] == "valid_account":
-                        otp = response['otp']
                         ForgotPassword.email = self.email_entry.get()
                         ForgotPassword.phone = f"+977{self.phone_entry.get()}"
-                        ForgotPassword.otp = otp
+
                         self.otp_entry.configure(state=NORMAL)
                         self.email_entry.configure(state=DISABLED)
                         self.phone_entry.configure(state=DISABLED)
@@ -239,20 +237,16 @@ class ForgotPassword:
 
 
     def click_submit(self):
-        if self.otp_entry.get() == "":
-            messagebox.askokcancel("Empty field","Enter otp")
-        elif self.valid_otp() is False:
-            messagebox.askokcancel("OTP","OTP should be six digits only")
-        elif self.otp_entry.get() != ForgotPassword.otp:
-            messagebox.showerror("Otp","Incorrect otp")
-        elif self.otp_entry.get() == ForgotPassword.otp:
+        request = {
+            'type' : 'validate_otp',
+            'otp' : self.otp_entry.get()
+        }
+        self.socket_connection.send(request)
+        response = self.socket_connection.receive()
+        if response['type'] == "correct_otp":
             self.change_password()
-
-    def valid_otp(self):
-        pattern = r"^[0-9]{6}$"
-        if re.match(pattern, self.otp_entry.get()):
-            return True
-        return False
+        else:
+            messagebox.showerror("Otp","Incorrect otp.")
 
     def change_password(self):
         email = ForgotPassword.email
@@ -377,7 +371,6 @@ class Signup:
     gender = None
     bday = None
     password = None
-    otp = None
     def __init__(self, window,socket_connection):
         self.window = window
         self.window.geometry("1906x952+5+9")
@@ -408,7 +401,6 @@ class Signup:
         self.fullname_label.place(x=752, y=246)
         self.fullname_entry = Entry(self.window, highlightthickness=0, relief=FLAT, bg="#EDEDED", fg="#000000",font=("Inter", 10, "bold"))
         self.fullname_entry.place(x=756, y=275, width=350, height=40)
-
 
         self.bday_label = Label(self.window, text="Date of birth", bg="white", fg="#000000",font=("Inter", 9, "bold"))
         self.bday_label.place(x=752, y=323)
@@ -494,7 +486,6 @@ class Signup:
                 messagebox.showerror("Error", "Invalid email format \n Try example123@bmail.com as format")
             else:
                 self.signup()
-
         except BaseException as msg:
             messagebox.showerror("Error", "Fill all the details")
 
@@ -527,9 +518,7 @@ class Signup:
                 messagebox.showerror("Email exists","Email already in use. Choose different email address")
             elif response['type'] == "otp_failed":
                 messagebox.showerror("Failed","Failed to send otp")
-            elif response['type'] == "otp":
-                otp = response['otp']
-                Signup.otp = otp
+            elif response['type'] == "otp_sent":
                 self.verify_phone()
 
         except ConnectionRefusedError as msg:
@@ -546,10 +535,9 @@ class Signup:
         gender = Signup.gender
         bday = Signup.bday
         password = Signup.password
-        otp = Signup.otp
         win = Toplevel()
         self.window.withdraw()
-        VerifyOTP(win,self.socket_connection,fname,nemail,phone,gender,bday,password,otp)
+        VerifyOTP(win,self.socket_connection,fname,nemail,phone,gender,bday,password)
         win.deiconify()
 
     def is_valid_email(self):
@@ -577,7 +565,7 @@ class Signup:
             quit()
 
 class VerifyOTP:
-    def __init__(self, window, socket_connection,fname,nemail,phone,gender,bday,password,otp):
+    def __init__(self, window, socket_connection,fname,nemail,phone,gender,bday,password):
         self.window = window
         self.window.geometry("1906x952+5+9")
         self.window.title("Verify")
@@ -591,7 +579,6 @@ class VerifyOTP:
         self.gender= gender
         self.bday= bday
         self.password= password
-        self.otp= otp
 
         ########## ON PRESSING X BUTTON TO CLOSE #############
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing) 
@@ -642,16 +629,16 @@ class VerifyOTP:
         self.cancel_button.place(x=969, y=619)
 
     def click_verify(self):
-        try:
-            if self.valid_otp() is False:
-                messagebox.askokcancel("OTP","OTP should be six digit numbers only")
-            elif self.otp_entry.get() == self.otp:
-                self.otp_entry.configure(state=DISABLED)
-                self.verified()
-            elif self.otp_entry.get() != self.otp:
-                messagebox.showerror("OTP","Incorrect otp")
-        except BaseException as msg:
-            print(msg)
+        request = {
+            'type' : 'validate_otp',
+            'otp' : self.otp_entry.get()
+        }
+        self.socket_connection.send(request)
+        response = self.socket_connection.receive()
+        if response['type'] == "correct_otp":
+            self.verified()
+        else:
+            messagebox.showerror("Otp","Incorrect otp.")
 
     def verified(self):
         try:
@@ -675,12 +662,6 @@ class VerifyOTP:
         except ConnectionRefusedError as msg:
             messagebox.showerror("Connection Failure","Failed to establish connection with server.")
             print(msg)
-
-    def valid_otp(self):
-        pattern = r"^[0-9]{6}$"
-        if re.match(pattern, self.otp_entry.get()):
-            return True
-        return False
     
     def goto_signup(self):
         win = Toplevel()
