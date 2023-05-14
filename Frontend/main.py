@@ -143,10 +143,8 @@ class Home:
 
         self.current_frame = None
         self.current_bodybox = None
-        self.current_button = None
         self.getuser_icon()
-        # self.click_home()
-        self.click_compose()
+        self.click_compose()            
 
     def getuser_icon(self):
         try:
@@ -168,7 +166,7 @@ class Home:
 
     def click_usericon(self):
         self.click_myprofile()
-
+    
     ######################################################################
     ########################   H O M E   #################################
     ######################################################################
@@ -246,10 +244,11 @@ class Home:
         self.sent_heading2.configure(text="Emails")
         self.sent_heading3.configure(text="Sent")
         self.support_heading1.configure(text="Need support?")
-        self.support_heading2.configure(text="bmail@support.com")
+        self.support_heading2.configure(text="support@bmail.com")
 
     def click_support(self):
         pass
+        # self.click_compose('support')
 
     ######################################################################
     #####################   C O M P O S E    #############################
@@ -350,6 +349,9 @@ class Home:
             self.subject_entry.delete(0, END)
             self.subject_entry.insert(0, f"[FWD]  "+subject)
             self.message_entry.insert('1.0',f"---------- Forwarded message ---------\nBy: {msgtoforward[2]}, < {msgtoforward[3]} >\nDate: {msgtoforward[1]}\nSubject: {subject}\nTo: {msgtoforward[4]},  < {msgtoforward[5]}  >\n\n{body}")
+
+        elif type == 'support':
+            self.toemail_entry.insert(0,'support@bmail.com')
 
     def on_message_paste(self, event):
         self.message_entry.update_idletasks()
