@@ -8,9 +8,9 @@ class DatabaseConnection:
 
     def d_connection(self):
         hostname = 'localhost'
-        db = 'bmailtest'
-        username = 'postgres'  
-        pwd = 'apeed'
+        db = 'db_name'
+        username = 'db_username'  
+        pwd = 'db_password'
         port_id = 5432
         self.connection= psycopg2.connect(host=hostname, database=db, user=username, password=pwd, port=port_id)
         self.cursor=self.connection.cursor()

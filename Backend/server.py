@@ -16,7 +16,7 @@ from twilio.rest import Client
 
 HEADER = 1024
 PORT = 1234
-SERVER = "100.83.45.111"
+SERVER = "localhost"
 ADDR = (SERVER, PORT)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,19 +51,19 @@ def get_weather():
         print('Error:', response.status_code)
 
 def send_sms(number):
-    # account_sid = 'Cff1bf5163825150e9ffc1ce4a21dae0'
-    # auth_token = 'e581185c5d6fd23521b836148d13aa'
-    # client = Client(account_sid, auth_token)
+    account_sid = 'acc_sid'
+    auth_token = 'auth_token'
+    client = Client(account_sid, auth_token)
 
     otp = str(random.randint(100000, 999999))
-    # num = number
-    # msg = f"Your OTP code for Bmail is {otp}"
-    # message = client.messages \
-    #                 .create(
-    #                     body=msg,
-    #                     from_='+15734754862',
-    #                     to=num
-    #                 )
+    num = number
+    msg = f"Your OTP code for Bmail is {otp}"
+    message = client.messages \
+                    .create(
+                        body=msg,
+                        from_='twilio_number',
+                        to=num
+                    )
     return otp
 
 def handle_client(c, addr):
